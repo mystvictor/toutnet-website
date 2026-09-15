@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   let userCoordinates = null;
   let activeTab = "residential";
-  let isPriorityListRequest = false; // Flag to track if the current request is for a non-covered zone
+  let isPriorityListRequest = false;
 
   // Initialize Supabase Client safely
   const SUPABASE_URL = "https://edjuasgetqbcvywwrddq.supabase.co";
@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (isPriorityListRequest) {
       leadModalSubtitle.textContent =
-        "Remplissez ce formulaire afin de vous contacter dès que AirFiber sera disponible dans votre secteur.";
+        "Remplissez ce formulaire pour être placé sur la liste prioritaire avec votre position GPS.";
     } else {
       const currentPlan =
         activeTab === "residential"
@@ -264,21 +264,154 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateWizardUI();
 
-  // Modal Logic
+  // Modal & Geolocation Core Logic
   const leadModal = document.getElementById("leadModal");
   const openLeadModal = document.getElementById("openLeadModal");
   const closeLeadModal = document.getElementById("closeLeadModal");
 
-  if (openLeadModal && leadModal) {
-    openLeadModal.addEventListener("click", () => {
-      isPriorityListRequest = false;
-      const areaInput = document.getElementById("area");
-      if (areaInput) {
-        areaInput.disabled = false;
+  // Geolocation Capture Function
+  const captureGPSCoordinates = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        if (window.Swal) {
+          Swal.fire({
+            icon: "error",
+            title: "Navigateur Incompatible",
+            text: "La géolocalisation n'est pas supportée par votre navigateur.",
+          });
+        }
+        return reject(new Error("Geolocation unsupported"));
       }
-      updateModalSubtitle();
-      leadModal.classList.add("active");
+
+      if (window.Swal) {
+        Swal.fire({
+          title: "Géolocalisation Requise",
+          text: "Veuillez autoriser l'accès GPS pour vérifier la visibilité directe de votre domicile avec nos relais AirFiber.",
+          icon: "info",
+          confirmButtonText: "Autoriser mon GPS",
+          confirmButtonColor: "#7c3aed",
+          allowOutsideClick: false,
+        }).then((res) => {
+          if (!res.isConfirmed) {
+            return reject(new Error("Permission denied by user"));
+          }
+
+          Swal.fire({
+            title: "Acquisition de la position GPS...",
+            text: "Calcul de votre position exacte en cours.",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+          });
+
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              userCoordinates = { latitude, longitude };
+
+              const areaInput = document.getElementById("area");
+              const formattedCoords = `GPS (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`;
+
+              if (areaInput) {
+                areaInput.value = formattedCoords;
+                areaInput.disabled = true;
+              }
+
+              Swal.close();
+              resolve(userCoordinates);
+            },
+            (error) => {
+              let msg = "Impossible de récupérer votre position GPS.";
+              if (error.code === error.PERMISSION_DENIED) {
+                msg = "Accès GPS refusé. La position GPS est obligatoire pour passer commande.";
+              }
+              Swal.fire({
+                icon: "error",
+                title: "GPS Requis",
+                text: msg,
+                confirmButtonColor: "#7c3aed",
+              });
+              reject(error);
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+          );
+        });
+      }
     });
+  };
+
+  // Plan Picker Modal Step for Coverage & Location Searches
+  const selectPlanModal = async () => {
+    const resOptions = RESIDENTIAL_TIERS.map(
+      (p, i) => `<option value="res_${i}">${p.speed} - ${p.price}/mois (Résidentiel/Pro)</option>`
+    ).join("");
+
+    const busOptions = BUSINESS_TIERS.map(
+      (p, i) => `<option value="bus_${i}">${p.speed} - ${p.price}/mois (Dédié Entreprise)</option>`
+    ).join("");
+
+    const { value: selectedVal } = await Swal.fire({
+      title: "Sélectionnez votre Forfait",
+      html: `
+        <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #64748b;">
+          Choisissez le forfait qui convient le mieux à vos besoins d'installation :
+        </p>
+        <select id="swalPlanSelect" class="swal2-input" style="width: 100%; max-width: 100%;">
+          <optgroup label="Forfaits Résidentiel / Pro">
+            ${resOptions}
+          </optgroup>
+          <optgroup label="Liaisons Dédiées Entreprise">
+            ${busOptions}
+          </optgroup>
+        </select>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Valider le Forfait",
+      cancelButtonText: "Annuler",
+      confirmButtonColor: "#7c3aed",
+      preConfirm: () => {
+        return document.getElementById("swalPlanSelect").value;
+      },
+    });
+
+    if (selectedVal) {
+      if (selectedVal.startsWith("res_")) {
+        activeTab = "residential";
+        currentStep = parseInt(selectedVal.replace("res_", ""), 10);
+      } else if (selectedVal.startsWith("bus_")) {
+        activeTab = "business";
+        currentStep = parseInt(selectedVal.replace("bus_", ""), 10);
+      }
+      updateWizardUI();
+      return true;
+    }
+    return false;
+  };
+
+  // Helper to trigger order flow: Captures GPS -> Pick Plan -> Open Lead Modal
+  const openOrderModalWithGPS = async (priorityFlag = false, promptPlanSelect = false) => {
+    isPriorityListRequest = priorityFlag;
+
+    if (!userCoordinates) {
+      try {
+        await captureGPSCoordinates();
+      } catch (err) {
+        console.warn("Order cancelled: GPS coordinates missing.");
+        return;
+      }
+    }
+
+    if (promptPlanSelect) {
+      const planPicked = await selectPlanModal();
+      if (!planPicked) return; // User cancelled plan selection
+    }
+
+    updateModalSubtitle();
+    if (leadModal) leadModal.classList.add("active");
+  };
+
+  if (openLeadModal) {
+    openLeadModal.addEventListener("click", () => openOrderModalWithGPS(false, false));
   }
 
   if (closeLeadModal && leadModal) {
@@ -336,14 +469,18 @@ document.addEventListener("DOMContentLoaded", () => {
     leadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
+      if (!userCoordinates) {
+        try {
+          await captureGPSCoordinates();
+        } catch (err) {
+          return;
+        }
+      }
+
       try {
         const nameInput = document.getElementById("name");
-        const areaInput = document.getElementById("area");
-
         const name = nameInput ? nameInput.value.trim() : "";
         const rawPhone = phoneInput ? phoneInput.value : "";
-        const area = areaInput ? areaInput.value : "";
-
         const digits = rawPhone.replace(/\D/g, "").replace(/^509/, "");
 
         if (digits.length !== 8) {
@@ -370,45 +507,38 @@ document.addEventListener("DOMContentLoaded", () => {
             : "Liaison Dédiée Entreprise";
 
         const formattedPlanName = `${categoryLabel} - ${currentPlan.speed} (${currentPlan.price}/mois)`;
+        const gpsString = `Lat ${userCoordinates.latitude.toFixed(5)}, Long ${userCoordinates.longitude.toFixed(5)}`;
 
-        // Show loading indicator
         if (window.Swal) {
           Swal.fire({
             title: "Envoi en cours...",
             text: "Veuillez patienter pendant l'enregistrement de votre demande.",
             allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            },
+            didOpen: () => Swal.showLoading(),
           });
         }
 
         if (!supabase) {
-          throw new Error("Le client Supabase n'est pas disponible. Vérifiez le chargement du script dans le <head>.");
+          throw new Error("Le client Supabase n'est pas disponible.");
         }
 
-        // Direct Supabase Insert
         const { data, error } = await supabase.from("leads").insert([
           {
             name: name,
             phone: rawPhone,
-            area: area,
+            area: gpsString,
             plan_name: formattedPlanName,
             category: activeTab,
             is_priority_list: isPriorityListRequest,
-            coordinates: userCoordinates ? userCoordinates : null,
+            coordinates: userCoordinates,
           },
         ]);
 
         if (error) throw error;
 
-        let extraInfo = userCoordinates
-          ? `\nCoordonnées GPS: Lat ${userCoordinates.latitude.toFixed(5)}, Long ${userCoordinates.longitude.toFixed(5)}`
-          : "";
-
         const successMessage = isPriorityListRequest
-          ? `Merci ${name} ! Vous êtes placé sur la liste prioritaire pour ${area}. Notre équipe vous contactera au ${rawPhone} dès que le réseau AirFiber y sera déployé.`
-          : `Merci ${name} ! Votre demande pour le forfait ${currentPlan.speed} a été reçue. Notre équipe vous contactera au ${rawPhone}.${extraInfo}`;
+          ? `Merci ${name} ! Vous êtes placé sur la liste prioritaire avec le forfait ${currentPlan.speed} à votre position GPS (${gpsString}). Notre équipe vous contactera au ${rawPhone} dès que le réseau y sera étendu.`
+          : `Merci ${name} ! Votre demande pour le forfait ${currentPlan.speed} a été reçue pour les coordonnées GPS (${gpsString}). Notre équipe vous contactera au ${rawPhone}.`;
 
         if (window.Swal) {
           Swal.fire({
@@ -421,10 +551,8 @@ document.addEventListener("DOMContentLoaded", () => {
           alert(successMessage);
         }
 
-        // Reset form and UI state
         if (leadModal) leadModal.classList.remove("active");
         leadForm.reset();
-        if (areaInput) areaInput.disabled = false;
         isPriorityListRequest = false;
         userCoordinates = null;
         if (phoneInput) phoneInput.value = formatPhoneNumber("");
@@ -456,128 +584,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Geolocation Workflow
-  const triggerGPSWorkflow = async () => {
-    if (mobileMenu) mobileMenu.classList.remove("active");
-    if (mobileOverlay) mobileOverlay.classList.remove("active");
-
-    if (!window.Swal) {
-      alert("SweetAlert2 est introuvable. Veuillez vérifier vos balises script.");
-      return;
-    }
-
-    const permissionCheck = await Swal.fire({
-      title: "Vérification d'éligibilité GPS",
-      text: "Partagez votre position GPS pour que nos ingénieurs vérifient immédiatement la visibilité directe avec le relais Toutnet le plus proche.",
-      icon: "location",
-      confirmButtonText: "Autoriser la Géolocalisation",
-      confirmButtonColor: "#7c3aed",
-      allowOutsideClick: false,
-    });
-
-    if (!permissionCheck.isConfirmed) {
-      const coverageSection = document.getElementById("coverage");
-      if (coverageSection) coverageSection.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-
-    Swal.fire({
-      title: "Localisation GPS en cours...",
-      html: "Calcul du signal avec nos relais à Port-au-Prince.",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-
-    if (!navigator.geolocation) {
-      Swal.fire({
-        icon: "error",
-        title: "Navigateur incompatible",
-        text: "La géolocalisation n'est pas supportée par votre navigateur.",
-      });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        userCoordinates = { latitude, longitude };
-
-        const areaInput = document.getElementById("area");
-        const addressInput = document.getElementById("addressInput");
-        const formattedCoords = `GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
-
-        if (areaInput) {
-          areaInput.value = formattedCoords;
-          areaInput.disabled = true;
-        }
-        if (addressInput) addressInput.value = formattedCoords;
-
-        Swal.fire({
-          icon: "success",
-          title: "Zone Couverte !",
-          html: `
-                <p style="margin-bottom: 10px;">Merci d'avoir partagé vos coordonnées GPS. Nos ingénieurs vous contacteront sous peu pour un suivi.</p>
-                <div class="location-details">
-                  <p><strong>Latitude :</strong> ${latitude}</p>
-                  <p><strong>Longitude :</strong> ${longitude}</p>
-                  <p style="color: #94a3b8; font-size: 0.8rem;">Précision estimée : ~${Math.round(accuracy)} mètres</p>
-                </div>
-              `,
-          showCancelButton: true,
-          confirmButtonText: "Commander mon Forfait",
-          cancelButtonText: "Fermer",
-          confirmButtonColor: "#7c3aed",
-          cancelButtonColor: "#6b7280",
-        }).then((res) => {
-          if (res.isConfirmed && leadModal) {
-            isPriorityListRequest = false;
-            updateModalSubtitle();
-            leadModal.classList.add("active");
-          }
-        });
-      },
-      (error) => {
-        let errorMessage = "Impossible d'obtenir votre localisation.";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage =
-              "Accès GPS refusé. Veuillez autoriser la géolocalisation dans la barre d'adresse de votre navigateur.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Le signal GPS est temporairement indisponible.";
-            break;
-          case error.TIMEOUT:
-            errorMessage =
-              "La demande de géolocalisation a expiré. Veuillez réessayer.";
-            break;
-        }
-
-        Swal.fire({
-          icon: "error",
-          title: "Erreur de géolocalisation",
-          text: errorMessage,
-          confirmButtonText: "Compris",
-          confirmButtonColor: "#7c3aed",
-        });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      },
-    );
-  };
-
-  // Bind GPS trigger to specific buttons
+  // Bind Navbar GPS trigger buttons
   const btnTesterAdresseNav = document.getElementById("btnTesterAdresseNav");
   if (btnTesterAdresseNav) {
-    btnTesterAdresseNav.addEventListener("click", triggerGPSWorkflow);
+    btnTesterAdresseNav.addEventListener("click", () => openOrderModalWithGPS(false, true));
   }
   if (btnTesterAdresseMobile) {
-    btnTesterAdresseMobile.addEventListener("click", triggerGPSWorkflow);
+    btnTesterAdresseMobile.addEventListener("click", () => openOrderModalWithGPS(false, true));
   }
 
   // Utility function to normalize text (remove accents & lowercase)
@@ -589,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .trim();
   }
 
-  // Coverage Check Handler (Manual Text Address Submission)
+  // Coverage Check Handler
   const coverageForm = document.getElementById("coverageForm");
   if (coverageForm) {
     coverageForm.addEventListener("submit", (e) => {
@@ -603,7 +616,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!normalizedInput) return;
 
-      // Check if input matches any covered zone
       const isCovered = COVERED_ZONES.some((zone) =>
         normalizedInput.includes(normalizeText(zone))
       );
@@ -614,28 +626,19 @@ document.addEventListener("DOMContentLoaded", () => {
             icon: "success",
             title: "Zone Couverte !",
             html: `
-              <p>Bonne nouvelle ! Le quartier <strong>"${userQuery}"</strong> est déjà couvert par notre réseau AirFiber.</p>
+              <p>Le secteur <strong>"${userQuery}"</strong> est dans notre périmètre.</p>
               <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #94a3b8;">
-                Vous pouvez immédiatement choisir et commander votre forfait.
+                Pour finaliser votre commande, vous allez choisir votre forfait et partager votre position GPS exacte.
               </p>
             `,
             showCancelButton: true,
-            confirmButtonText: "Commander mon Forfait",
-            cancelButtonText: "Fermer",
+            confirmButtonText: "Choisir un Forfait & Commander",
+            cancelButtonText: "Annuler",
             confirmButtonColor: "#7c3aed",
             cancelButtonColor: "#6b7280",
           }).then((result) => {
             if (result.isConfirmed) {
-              isPriorityListRequest = false;
-              const areaInput = document.getElementById("area");
-              if (areaInput) {
-                areaInput.value = userQuery;
-                areaInput.disabled = false;
-              }
-
-              updateModalSubtitle();
-
-              if (leadModal) leadModal.classList.add("active");
+              openOrderModalWithGPS(false, true);
             }
           });
         }
@@ -645,28 +648,19 @@ document.addEventListener("DOMContentLoaded", () => {
             icon: "info",
             title: "Pas de Couverture Directe",
             html: `
-              <p>La zone <strong>"${userQuery}"</strong> n'est pas encore directement couverte par notre réseau AirFiber.</p>
+              <p>La zone <strong>"${userQuery}"</strong> n'est pas encore répertoriée dans notre couverture active.</p>
               <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #94a3b8;">
-                Laissez-nous vos coordonnées pour être contacté prioritairement dès que la zone sera desservie.
+                Choisissez un forfait pour être inscrit en liste prioritaire avec vos coordonnées GPS.
               </p>
             `,
             showCancelButton: true,
-            confirmButtonText: "Laisser mes Coordonnées",
-            cancelButtonText: "Fermer",
+            confirmButtonText: "S'inscrire sur Liste Prioritaire",
+            cancelButtonText: "Annuler",
             confirmButtonColor: "#7c3aed",
             cancelButtonColor: "#6b7280",
           }).then((result) => {
             if (result.isConfirmed) {
-              isPriorityListRequest = true;
-              const areaInput = document.getElementById("area");
-              if (areaInput) {
-                areaInput.value = userQuery;
-                areaInput.disabled = false;
-              }
-
-              updateModalSubtitle();
-
-              if (leadModal) leadModal.classList.add("active");
+              openOrderModalWithGPS(true, true);
             }
           });
         }
