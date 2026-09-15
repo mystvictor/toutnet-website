@@ -14,6 +14,68 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Supabase SDK not found in <head>. Please check your CDN script tag.");
   }
 
+  // Toast Notification Helper
+  const showToast = (icon, title) => {
+    if (window.Swal) {
+      const Toast = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3500,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.addEventListener("mouseenter", Swal.stopTimer);
+          toast.addEventListener("mouseleave", Swal.resumeTimer);
+        },
+      });
+      Toast.fire({
+        icon: icon,
+        title: title,
+      });
+    } else {
+      alert(`${icon.toUpperCase()}: ${title}`);
+    }
+  };
+
+  // Helper: Visual Shake Animation & Input Highlight
+  const highlightInputError = (inputEl) => {
+    if (!inputEl) return;
+
+    // Dynamically insert CSS keyframe for shake if not present
+    if (!document.getElementById("shake-animation-style")) {
+      const style = document.createElement("style");
+      style.id = "shake-animation-style";
+      style.textContent = `
+        @keyframes inputShake {
+          0%, 100% { transform: translateX(0); }
+          20%, 60% { transform: translateX(-8px); }
+          40%, 80% { transform: translateX(8px); }
+        }
+        .input-error-shake {
+          animation: inputShake 0.4s ease-in-out !important;
+          border-color: #ef4444 !important;
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    inputEl.classList.add("input-error-shake");
+    inputEl.focus();
+
+    // Remove shake after animation completes, clear error border on input
+    setTimeout(() => {
+      inputEl.classList.remove("input-error-shake");
+    }, 400);
+
+    const clearError = () => {
+      inputEl.style.borderColor = "";
+      inputEl.style.boxShadow = "";
+      inputEl.removeEventListener("input", clearError);
+    };
+    inputEl.addEventListener("input", clearError);
+  };
+
   // Data Tiers for Residential / Pro
   const RESIDENTIAL_TIERS = [
     {
@@ -86,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   ];
 
-  // List of covered zones (lowercase for matching)
+  // List of covered zones
   const COVERED_ZONES = [
     "delmas",
     "delmas 75",
@@ -107,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "peguyville",
     "haut de turgeau",
     "port-au-prince",
-    "laboule"
+    "laboule",
   ];
 
   let currentStep = 1;
@@ -151,7 +213,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const feat4 = document.getElementById("feat4");
 
-  // Helper function to update modal subtitle text
   function updateModalSubtitle() {
     const leadModalSubtitle = document.querySelector("#leadModal p");
     if (!leadModalSubtitle) return;
@@ -189,7 +250,8 @@ document.addEventListener("DOMContentLoaded", () => {
       activeTab === "residential"
         ? "Forfait Résidentiel / Pro"
         : "Liaison Dédiée Entreprise";
-    if (modalPlanName) modalPlanName.textContent = `${categoryLabel} - ${data.speed} (${data.price}/mois)`;
+    if (modalPlanName)
+      modalPlanName.textContent = `${categoryLabel} - ${data.speed} (${data.price}/mois)`;
 
     if (btnMinus) {
       btnMinus.disabled = currentStep === 0;
@@ -268,18 +330,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const leadModal = document.getElementById("leadModal");
   const openLeadModal = document.getElementById("openLeadModal");
   const closeLeadModal = document.getElementById("closeLeadModal");
+  const submitBtn = document.getElementById("btnSubmitLead");
 
-  // Geolocation Capture Function
   const captureGPSCoordinates = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        if (window.Swal) {
-          Swal.fire({
-            icon: "error",
-            title: "Navigateur Incompatible",
-            text: "La géolocalisation n'est pas supportée par votre navigateur.",
-          });
-        }
+        showToast("error", "La géolocalisation n'est pas supportée.");
         return reject(new Error("Geolocation unsupported"));
       }
 
@@ -293,6 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
           allowOutsideClick: false,
         }).then((res) => {
           if (!res.isConfirmed) {
+            showToast("warning", "Permission GPS refusée par l'utilisateur.");
             return reject(new Error("Permission denied by user"));
           }
 
@@ -317,19 +374,15 @@ document.addEventListener("DOMContentLoaded", () => {
               }
 
               Swal.close();
+              showToast("success", "Position GPS acquise avec succès.");
               resolve(userCoordinates);
             },
             (error) => {
               let msg = "Impossible de récupérer votre position GPS.";
               if (error.code === error.PERMISSION_DENIED) {
-                msg = "Accès GPS refusé. La position GPS est obligatoire pour passer commande.";
+                msg = "Accès GPS refusé. La position GPS est obligatoire.";
               }
-              Swal.fire({
-                icon: "error",
-                title: "GPS Requis",
-                text: msg,
-                confirmButtonColor: "#7c3aed",
-              });
+              showToast("error", msg);
               reject(error);
             },
             { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
@@ -339,7 +392,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Plan Picker Modal Step for Coverage & Location Searches
   const selectPlanModal = async () => {
     const resOptions = RESIDENTIAL_TIERS.map(
       (p, i) => `<option value="res_${i}">${p.speed} - ${p.price}/mois (Résidentiel/Pro)</option>`
@@ -388,7 +440,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return false;
   };
 
-  // Helper to trigger order flow: Captures GPS -> Pick Plan -> Open Lead Modal
   const openOrderModalWithGPS = async (priorityFlag = false, promptPlanSelect = false) => {
     isPriorityListRequest = priorityFlag;
 
@@ -403,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (promptPlanSelect) {
       const planPicked = await selectPlanModal();
-      if (!planPicked) return; // User cancelled plan selection
+      if (!planPicked) return;
     }
 
     updateModalSubtitle();
@@ -465,35 +516,79 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  /* ==========================================================================
+     Form Submission with Shake Animation & Haiti [2-5] Phone Validation
+     ========================================================================== */
   if (leadForm) {
     leadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
+      // 1. Validate Name Field
+      const nameInput = document.getElementById("name");
+      const name = nameInput ? nameInput.value.trim() : "";
+
+      if (!name) {
+        showToast("warning", "Veuillez entrer votre nom ou entreprise.");
+        highlightInputError(nameInput);
+        return;
+      }
+
+      // 2. Honeypot Anti-Spam Check
+      const honeypotEl = document.getElementById("address_hp");
+      if (honeypotEl && honeypotEl.value.trim() !== "") {
+        console.warn("Spam attempt detected via honeypot.");
+        showToast("success", "Demande envoyée !");
+        if (leadModal) leadModal.classList.remove("active");
+        leadForm.reset();
+        return;
+      }
+
+      // 3. Rate Limiting Check (2-minute cooldown)
+      const LAST_SUBMIT_KEY = "toutnet_last_lead_submit";
+      const COOLDOWN_TIME = 2 * 60 * 1000;
+      const lastSubmit = localStorage.getItem(LAST_SUBMIT_KEY);
+
+      if (lastSubmit && Date.now() - parseInt(lastSubmit, 10) < COOLDOWN_TIME) {
+        const remainingSeconds = Math.ceil(
+          (COOLDOWN_TIME - (Date.now() - parseInt(lastSubmit, 10))) / 1000
+        );
+        showToast(
+          "warning",
+          `Patientez ${remainingSeconds}s avant de réesayer.`
+        );
+        return;
+      }
+
+      // 4. Haitian Phone Validation [2-5]
+      const rawPhone = phoneInput ? phoneInput.value : "";
+      const cleanedPhone = rawPhone.replace(/\s+/g, "");
+      // Restricts valid starting digits to 2, 3, 4, or 5 for Haiti
+      const haitiPhoneRegex = /^(?:\+509)?[2-5]\d{7}$/;
+
+      if (!haitiPhoneRegex.test(cleanedPhone)) {
+        showToast(
+          "error",
+          "Numéro haïtien invalide (+509 2-5XX XXXX)."
+        );
+        highlightInputError(phoneInput);
+        return;
+      }
+
+      // 5. GPS Coordinates Validation
       if (!userCoordinates) {
         try {
           await captureGPSCoordinates();
         } catch (err) {
+          showToast("error", "Position GPS requise pour soumettre.");
           return;
         }
       }
 
+      // 6. Submission Block
       try {
-        const nameInput = document.getElementById("name");
-        const name = nameInput ? nameInput.value.trim() : "";
-        const rawPhone = phoneInput ? phoneInput.value : "";
-        const digits = rawPhone.replace(/\D/g, "").replace(/^509/, "");
-
-        if (digits.length !== 8) {
-          if (window.Swal) {
-            Swal.fire({
-              icon: "error",
-              title: "Numéro Incomplet",
-              text: "Veuillez saisir un numéro de téléphone valide à 8 chiffres (ex: +509 4444 5555).",
-            });
-          } else {
-            alert("Veuillez saisir un numéro de téléphone valide à 8 chiffres.");
-          }
-          return;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerText = "Traitement en cours...";
         }
 
         const currentPlan =
@@ -536,19 +631,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (error) throw error;
 
-        const successMessage = isPriorityListRequest
-          ? `Merci ${name} ! Vous êtes placé sur la liste prioritaire avec le forfait ${currentPlan.speed} à votre position GPS (${gpsString}). Notre équipe vous contactera au ${rawPhone} dès que le réseau y sera étendu.`
-          : `Merci ${name} ! Votre demande pour le forfait ${currentPlan.speed} a été reçue pour les coordonnées GPS (${gpsString}). Notre équipe vous contactera au ${rawPhone}.`;
+        localStorage.setItem(LAST_SUBMIT_KEY, Date.now().toString());
+
+        const successTitle = isPriorityListRequest
+          ? "Inscrit sur Liste Prioritaire !"
+          : "Demande envoyée avec succès !";
 
         if (window.Swal) {
           Swal.fire({
             icon: "success",
-            title: "Demande envoyée !",
-            text: successMessage,
+            title: successTitle,
+            html: `
+              <p>Merci <strong>${name}</strong> !</p>
+              <p style="margin-top:0.5rem; font-size:0.9rem; color:#64748b;">
+                Votre demande pour le forfait <strong>${currentPlan.speed}</strong> a été enregistrée à la position GPS (<code>${gpsString}</code>).
+              </p>
+              <p style="margin-top:0.5rem; font-size:0.85rem; color:#94a3b8;">
+                Notre équipe vous recontactera très prochainement au <strong>${rawPhone}</strong>.
+              </p>
+            `,
             confirmButtonColor: "#7c3aed",
           });
-        } else {
-          alert(successMessage);
         }
 
         if (leadModal) leadModal.classList.remove("active");
@@ -559,15 +662,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       } catch (err) {
         console.error("Critical Lead Submission Error:", err);
-        if (window.Swal) {
-          Swal.fire({
-            icon: "error",
-            title: "Erreur d'envoi",
-            text: err.message || "Une erreur est survenue lors de l'enregistrement. Veuillez réessayer.",
-            confirmButtonColor: "#7c3aed",
-          });
-        } else {
-          alert("Une erreur est survenue lors de l'enregistrement: " + err.message);
+        showToast("error", err.message || "Erreur d'envoi. Veuillez réessayer.");
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Valider ma Demande";
         }
       }
     });
@@ -593,7 +692,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnTesterAdresseMobile.addEventListener("click", () => openOrderModalWithGPS(false, true));
   }
 
-  // Utility function to normalize text (remove accents & lowercase)
   function normalizeText(text) {
     return text
       .toLowerCase()
@@ -602,7 +700,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .trim();
   }
 
-  // Coverage Check Handler
+  // Coverage Check Form Handler
   const coverageForm = document.getElementById("coverageForm");
   if (coverageForm) {
     coverageForm.addEventListener("submit", (e) => {
@@ -614,7 +712,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const userQuery = addressInput.value;
       const normalizedInput = normalizeText(userQuery);
 
-      if (!normalizedInput) return;
+      if (!normalizedInput) {
+        showToast("warning", "Veuillez entrer un nom de quartier.");
+        highlightInputError(addressInput);
+        return;
+      }
 
       const isCovered = COVERED_ZONES.some((zone) =>
         normalizedInput.includes(normalizeText(zone))

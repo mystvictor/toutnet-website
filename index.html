@@ -73,6 +73,25 @@
     <link rel="stylesheet" href="assets/css/style.css" />
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TelecommunicationsService",
+        "name": "Toutnet SA",
+        "url": "https://www.toutnethaiti.com",
+        "telephone": "+509-3178-6060",
+        "areaServed": ["Port-au-Prince", "Delmas", "Pétion-Ville", "Tabarre"],
+        "provider": {
+          "@type": "LocalBusiness",
+          "name": "Toutnet SA",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Port-au-Prince",
+            "addressCountry": "HT"
+          }
+        }
+      }
+    </script>
   </head>
 
   <body>
@@ -501,6 +520,12 @@
         </p>
 
         <form id="leadForm">
+          <!-- Honeypot Field (Invisible to real users, traps automated spam bots) -->
+          <div style="display: none !important;" aria-hidden="true">
+            <label for="address_hp">Leave this field blank</label>
+            <input type="text" id="address_hp" name="address_hp" tabindex="-1" autocomplete="off" />
+          </div>
+
           <div class="form-group">
             <label for="name">Nom / Nom de l'entreprise</label>
             <input
@@ -537,6 +562,7 @@
 
           <button
             type="submit"
+            id="btnSubmitLead"
             class="btn-select-plan"
             style="width: 100%; margin-top: 0.5rem"
           >
