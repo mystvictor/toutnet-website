@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Toutnet SA — L'Internet Ultra-Rapide par AirFiber à Port-au-Prince
+    </title>
+
+    <!-- SweetAlert2 CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"
+    />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <!-- Supabse -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+
+  <body>
+    <!-- 1. Navbar & Navigation -->
+    <nav class="navbar">
+      <div class="container nav-container">
+        <a href="#" class="brand-logo">TOUTNET<span>.SA</span></a>
+
+        <!-- Desktop Links -->
+        <ul class="nav-links">
+          <li><a href="#plans">Forfaits AirFiber</a></li>
+          <li><a href="#features">Avantages</a></li>
+          <li><a href="#coverage">Éligibilité</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+
+        <div class="nav-desktop-right">
+          <button id="btnTesterAdresseNav" class="btn-nav">
+            Vérifier mon Adresse
+          </button>
+        </div>
+
+        <!-- Mobile Hamburger Button -->
+        <button
+          class="hamburger-btn"
+          id="hamburgerBtn"
+          aria-label="Ouvrir le menu"
+        >
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            ></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile Drawer Menu -->
+    <div class="mobile-menu-overlay" id="mobileOverlay"></div>
+    <div class="mobile-menu" id="mobileMenu">
+      <ul class="mobile-nav-links">
+        <li><a href="#plans" class="mobile-link">Forfaits AirFiber</a></li>
+        <li><a href="#features" class="mobile-link">Avantages</a></li>
+        <li><a href="#coverage" class="mobile-link">Éligibilité</a></li>
+        <li><a href="#faq" class="mobile-link">FAQ</a></li>
+      </ul>
+      <button
+        id="btnTesterAdresseMobile"
+        class="btn-nav"
+        style="width: 100%; margin-top: auto; padding: 0.75rem"
+      >
+        Vérifier mon Adresse
+      </button>
+    </div>
+
+    <!-- 2. Hero Section (Positioned Directly Below Header) -->
+    <section class="hero-section" id="plans">
+      <div class="container">
+        <div class="hero-header">
+          <span class="badge-pill">📡 Technologie Point-à-Point Dédiée</span>
+          <h1 class="hero-title">
+            L'Internet Ultra-Rapide qui
+            <span class="text-gradient">Propulse</span>.
+          </h1>
+          <p class="hero-subtitle">
+            Une connexion haut débit stable sans coupure. Sélectionnez votre
+            vitesse ci-dessous.
+          </p>
+        </div>
+
+        <div class="hero-grid">
+          <!-- Floating Image with Backlight Glow -->
+          <div class="hero-image-box">
+            <img
+              src="assets/img/toutnet-hero-img.png"
+              alt="Customer Connected to AirFiber Service Provided by Toutnet SA"
+              class="hero-image"
+            />
+          </div>
+
+          <!-- Interactive Configurator -->
+          <div class="wizard-card">
+            <!-- Tab Bar Switcher -->
+            <div class="tab-bar">
+              <button id="tabInternet" class="tab-btn active">
+                Internet AirFiber
+              </button>
+              <button id="tabCombo" class="tab-btn inactive">
+                Internet + Entreprise
+              </button>
+            </div>
+
+            <!-- Specs Row -->
+            <div class="plan-specs">
+              <div class="router-icon-box">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
+                  ></path>
+                </svg>
+              </div>
+              <div>
+                <h3 id="planCategoryTitle" class="plan-title">
+                  Forfait Pro / Résidentiel
+                </h3>
+                <div class="specs-grid" id="planSpecsGrid">
+                  <div><span>✓</span> Wi-Fi 6 inclus</div>
+                  <div><span>✓</span> Modem AirFiber</div>
+                  <div><span>✓</span> Couverture Multi-Étage</div>
+                  <div><span>✓</span> Support 24/7</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Interactive Stepper -->
+            <div class="stepper-box">
+              <div class="stepper-header">
+                <div>
+                  <span id="speedDisplay" class="speed-number">100 Mbps</span>
+                  <span class="upload-info"
+                    >⚡ téléversement
+                    <span id="uploadDisplay">20 Mbps</span></span
+                  >
+                </div>
+                <!-- <a href="#faq" class="help-link">Quelle vitesse choisir ?</a> -->
+              </div>
+
+              <!-- Progress Bar Controls -->
+              <div class="controls-row">
+                <div class="progress-bar-bg">
+                  <div id="progressBar" class="progress-bar-fill"></div>
+                </div>
+                <div class="btn-step-group">
+                  <button id="btnMinus" class="btn-step">-</button>
+                  <button id="btnPlus" class="btn-step">+</button>
+                </div>
+              </div>
+
+              <!-- Dynamic Features -->
+              <div class="feature-bullets">
+                <div id="feat1"><span>✓</span> Technologie Point-à-Point</div>
+                <div id="feat2">
+                  <span>✓</span> <span id="deviceCount">6-12 appareils</span>
+                </div>
+                <div id="feat3"><span>✓</span> Données 100% Illimitées</div>
+                <div id="feat4"><span>✓</span> Antenne Extérieure Offerte</div>
+              </div>
+            </div>
+
+            <!-- Price & Order Action -->
+            <div class="cta-row">
+              <div>
+                <span id="priceDisplay" class="price-value">$85</span>
+                <span class="price-unit">/mois</span>
+              </div>
+              <button id="openLeadModal" class="btn-select-plan">
+                Commander ce Forfait &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Key Features Section -->
+    <section id="features">
+      <div class="container">
+        <h2 class="section-title">Pourquoi choisir Toutnet AirFiber ?</h2>
+        <p class="section-subtitle">
+          Une technologie conçue pour surmonter les défis d'infrastructures à
+          Port-au-Prince.
+        </p>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                ></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">Vitesse Garantie</h3>
+            <p class="feature-desc">
+              Profitez d'une bande passante dédiée sans ralentissement pendant
+              les heures de pointe.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                ></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">Sans Câbles Terrestres</h3>
+            <p class="feature-desc">
+              Insensible aux coupures de câbles physiques et aux travaux de
+              voirie à Port-au-Prince.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                ></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">Support Local 24/7</h3>
+            <p class="feature-desc">
+              Une équipe technique basée en Haïti pour intervenir rapidement en
+              cas de problème.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Coverage Eligibility Section -->
+    <section id="coverage">
+      <div class="container">
+        <div class="coverage-card">
+          <h2 class="section-title">Vérifiez la couverture dans votre zone</h2>
+          <p class="section-subtitle" style="margin-bottom: 0">
+            Disponible sur Port-au-Prince, Pétion-Ville, Delmas, Tabarre et
+            environs.
+          </p>
+
+          <form class="coverage-form" id="coverageForm">
+            <input
+              type="text"
+              id="addressInput"
+              placeholder="Entrez votre quartier (ex: Delmas 75, Bois Verna...)"
+              class="coverage-input"
+              required
+            />
+            <button
+              type="submit"
+              id="btnTesterAdresseSection"
+              class="btn-select-plan"
+              style="padding: 0.75rem 1.25rem"
+            >
+              Vérifier ma Zone
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. FAQ Section -->
+    <section id="faq">
+      <div class="container">
+        <h2 class="section-title">Questions Fréquentes</h2>
+        <p class="section-subtitle">
+          Tout ce que vous devez savoir sur le service Toutnet AirFiber.
+        </p>
+
+        <div class="faq-container">
+          <div class="faq-item">
+            <button class="faq-question">
+              Qu'est-ce que la technologie AirFiber ?
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              AirFiber est une liaison hertzienne point-à-point à haute
+              fréquence qui délivre des vitesses équivalentes à la fibre optique
+              sans nécessiter de câblage terrestre.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              Comment se déroule l'installation ?
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              Nos techniciens installent une petite antenne discrète sur votre
+              toit, orientée vers notre relais le plus proche, puis la
+              raccordent à votre routeur Wi-Fi intérieur.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              Que se passe-t-il en cas de mauvaises conditions météo ?
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              Nos équipements AirFiber disposent d'une marge de puissance élevée
+              conçue pour traverser les fortes pluies tropicales sans
+              dégradation de signal.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a href="#" class="brand-logo">TOUTNET<span>.SA</span></a>
+            <p>
+              Fournisseur de solutions Internet haute performance à
+              Port-au-Prince, Haïti.
+            </p>
+          </div>
+          <div>
+            <h4 style="color: var(--text-white); margin-bottom: 0.5rem">
+              Services
+            </h4>
+            <p>AirFiber Résidentiel</p>
+            <p>AirFiber Business</p>
+            <p>Liaisons Dédiées</p>
+          </div>
+          <div>
+            <h4 style="color: var(--text-white); margin-bottom: 0.5rem">
+              Contact
+            </h4>
+            <p>Port-au-Prince, Haïti</p>
+            <p>Téléphone: +509 3178-6060</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2026 Toutnet SA. Tous droits réservés.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- 7. Lead Capture Modal -->
+    <div class="modal-overlay" id="leadModal">
+      <div class="modal-box">
+        <button class="modal-close" id="closeLeadModal">&times;</button>
+        <h3 style="font-size: 1.3rem; margin-bottom: 0.35rem">
+          Commander AirFiber
+        </h3>
+        <p
+          style="
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+          "
+        >
+          Remplissez ce formulaire pour planifier l'installation de votre
+          forfait
+          <strong id="modalPlanName" style="color: var(--text-white)"
+            >100 Mbps</strong
+          >.
+        </p>
+
+        <form id="leadForm">
+          <div class="form-group">
+            <label for="name">Nom / Nom de l'entreprise</label>
+            <input
+              type="text"
+              id="name"
+              class="form-control"
+              placeholder="Nom ou Entreprise"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Numéro Téléphone (+509)</label>
+            <input
+              type="tel"
+              id="phone"
+              class="form-control"
+              value="+509 "
+              required
+              placeholder="+509 4444 5555"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="area">Géolocalisation</label>
+            <input
+              type="text"
+              id="area"
+              class="form-control"
+              placeholder="Delmas 75, Rue..."
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="btn-select-plan"
+            style="width: 100%; margin-top: 0.5rem"
+          >
+            Valider ma Demande
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- SweetAlert2 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Vanilla JavaScript -->
+    <script src="assets/js/script.js"></script>
+  </body>
+</html>
