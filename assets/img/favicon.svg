@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+
+    <!-- Glowing Brand Gradient -->
+    <linearGradient id="brandGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="50%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow -->
+    <filter id="glow1" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Rounded App Icon Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad1)" />
+
+  <!-- Main "T" Shape with AirFiber Signal Motif -->
+  <g filter="url(#glow1)">
+    <!-- Vertical Stem -->
+    <path d="M220 180 H292 V400 C292 413.255 281.255 424 268 424 H244 C230.745 424 220 413.255 220 400 V180 Z" fill="url(#brandGrad1)" />
+
+    <!-- Horizontal Top Bar -->
+    <rect x="100" y="100" width="312" height="64" rx="20" fill="url(#brandGrad1)" />
+
+    <!-- Signal Pulses (AirFiber Motif) -->
+    <path d="M370 200 A 70 70 0 0 1 420 250" stroke="#06b6d4" stroke-width="16" stroke-linecap="round" fill="none" opacity="0.9" />
+    <path d="M360 250 A 110 110 0 0 1 440 330" stroke="#a855f7" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.6" />
+  </g>
+</svg>
