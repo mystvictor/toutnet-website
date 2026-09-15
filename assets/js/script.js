@@ -647,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 Votre demande pour le forfait <strong>${currentPlan.speed}</strong> a été enregistrée à la position GPS (<code>${gpsString}</code>).
               </p>
               <p style="margin-top:0.5rem; font-size:0.85rem; color:#94a3b8;">
-                Notre équipe vous recontactera très prochainement au <strong>${rawPhone}</strong>.
+                Notre équipe vous contactera au <strong>${rawPhone}</strong>.
               </p>
             `,
             confirmButtonColor: "#7c3aed",
