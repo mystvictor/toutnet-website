@@ -85,12 +85,11 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   /* ==========================================================================
-     UISP CRM API Configuration
+     Render Proxy API Configuration
      ========================================================================== */
-  const UISP_CONFIG = {
-    baseUrl: "https://toutnet.unmsapp.com",
-    appKey: "fLJoh6sBrjGiP2US3PYnIkVg6cJ+zkofxieCguxa5/OkhHyqpS+Ba4aKbBrq42fU",
-  };
+
+  // Update this to match your actual deployed Render service URL
+  const PROXY_BASE_URL = "http://127.0.0.1:3001" //"https://your-app-name.onrender.com";
 
   // Data Tiers for Residential / Pro
   const RESIDENTIAL_TIERS = [
@@ -546,28 +545,26 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Helper to check if user coordinates fall inside any UISP CRM Service Area
+  // Helper to query coverage sites via Render Proxy API
   const checkUISPCoverage = async (latitude, longitude) => {
     try {
-      const response = await fetch(
-        `${UISP_CONFIG.baseUrl}/crm/api/v1.0/service-areas`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Auth-App-Key": UISP_CONFIG.appKey,
-          },
+      const response = await fetch(`${PROXY_BASE_URL}/api/coverage-sites`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+      });
 
       if (!response.ok) {
         console.warn(
-          "Could not fetch service areas from UISP CRM, defaulting to manual/list check.",
+          "Could not fetch coverage sites from proxy server, defaulting to manual/list check.",
         );
-        return null; // Fallback gracefully if endpoint isn't accessible
+        return null;
       }
 
-      const serviceAreas = await response.json();
+      const result = await response.json();
+      const serviceAreas = result.data;
+
       if (!Array.isArray(serviceAreas) || serviceAreas.length === 0) {
         return null;
       }
@@ -589,10 +586,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return inside;
       };
 
-      // Iterate through configured Service Areas
+      // Iterate through coverage service areas
       for (const area of serviceAreas) {
         if (area.geometry && area.geometry.coordinates) {
-          // UISP Polygon coordinates format: [[[lng, lat], [lng, lat], ...]]
           const polygonCoords = area.geometry.coordinates[0];
           const isInside = isPointInPolygon(
             [longitude, latitude],
@@ -606,13 +602,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       return { isCovered: false, areaName: null };
     } catch (err) {
-      console.error("UISP Service Area API Error:", err);
-      return null; // Return null on error to allow graceful fallback
+      console.error("Coverage Proxy API Error:", err);
+      return null;
     }
   };
 
   /* ==========================================================================
-     Form Submission Sending Lead Data to UISP CRM API
+     Form Submission Sending Lead Data via Render Proxy
      ========================================================================== */
   if (leadForm) {
     leadForm.addEventListener("submit", async (e) => {
@@ -678,24 +674,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // 5b. Perform UISP CRM Coverage Verification
-      /* if (window.Swal) {
-        Swal.fire({
-          title: "Vérification de la couverture...",
-          text: "Interrogation du réseau AirFiber UISP en cours.",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading(),
-        });
-      }
-
-      const coverageResult = await checkUISPCoverage(
-        userCoordinates.latitude,
-        userCoordinates.longitude,
-      );
-
-      console.log("Coverage result: ", coverageResult) */
-
-      // 6. Submit Lead to UISP CRM API
+      // 6. Submit Lead to Render Proxy
       try {
         if (submitBtn) {
           submitBtn.disabled = true;
@@ -725,13 +704,19 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
 
-        // Split name into First / Last Name for UISP
+        // Split name into First / Last Name for CRM Payload
         const nameParts = name.trim().split(" ");
         const firstName = nameParts[0];
         const lastName = nameParts.slice(1).join(" ") || nameParts[0];
 
-        // Conforming payload strictly to UISP CRM API Client schema
-        const uispPayload = {
+        // Retrieve Cloudflare Turnstile token if widget is present in DOM
+        const turnstileInput = document.querySelector(
+          '[name="cf-turnstile-response"]',
+        );
+        const turnstileToken = turnstileInput ? turnstileInput.value : null;
+
+        // Payload structure expected by the Render proxy
+        const leadPayload = {
           isLead: true,
           clientType: activeTab === "business" ? 2 : 1, // 1 = Individual, 2 = Company
           firstName: firstName,
@@ -747,34 +732,26 @@ document.addEventListener("DOMContentLoaded", () => {
           ],
           street1: gpsString,
           note: `Lead Web Site - Plan : ${formattedPlanName} | Zone Couverte : ${isPriorityListRequest ? "NON" : "OUI"}`,
+          ...(turnstileToken && { turnstileToken }),
         };
 
-        const response = await fetch(
-          `${UISP_CONFIG.baseUrl}/crm/api/v1.0/clients`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Auth-App-Key": UISP_CONFIG.appKey,
-            },
-            body: JSON.stringify(uispPayload),
+        const response = await fetch(`${PROXY_BASE_URL}/api/leads`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify(leadPayload),
+        });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("UISP CRM Error Details:", errorData);
+        const result = await response.json();
 
-          const validationMessage = errorData.errors
-            ? Object.entries(errorData.errors)
-                .map(
-                  ([field, msg]) =>
-                    `${field}: ${Array.isArray(msg) ? msg.join(", ") : msg}`,
-                )
-                .join(" | ")
-            : errorData.message || `Erreur API UISP (${response.status})`;
-
-          throw new Error(validationMessage);
+        if (!response.ok || !result.success) {
+          console.error("Proxy API Error Details:", result);
+          const errorMessage =
+            result.error?.message ||
+            result.error ||
+            `Erreur Serveur (${response.status})`;
+          throw new Error(errorMessage);
         }
 
         localStorage.setItem(LAST_SUBMIT_KEY, Date.now().toString());
@@ -793,7 +770,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 Nous avons reçu votre demande pour le forfait <strong>${currentPlan.speed}</strong>, pour les coordonnées GPS : <br><code>${gpsString}</code>.
               </p>
               <p style="margin-top:0.5rem; font-size:0.85rem; color:#94a3b8;">
-                Notre équipe vous contactera prochainement au : <br> <strong>${rawPhone}</strong>.
+                Notre équipe vous contactera au <strong>${rawPhone}</strong>.
               </p>
             `,
             confirmButtonColor: "#7c3aed",
@@ -807,7 +784,7 @@ document.addEventListener("DOMContentLoaded", () => {
         userCoordinates = null;
         if (phoneInput) phoneInput.value = formatPhoneNumber("");
       } catch (err) {
-        console.error("UISP Lead Submission Error:", err);
+        console.error("Lead Submission Error:", err);
 
         if (window.Swal) {
           Swal.fire({
@@ -815,7 +792,7 @@ document.addEventListener("DOMContentLoaded", () => {
             title: "Échec de l'envoi",
             text:
               err.message ||
-              "Impossible de contacter le serveur CRM UISP. Réessayez plus tard.",
+              "Impossible de contacter le serveur. Réessayez plus tard.",
             confirmButtonColor: "#ef4444",
           });
         } else {
