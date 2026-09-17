@@ -3,15 +3,16 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeTab = "residential";
   let isPriorityListRequest = false;
 
-  /* ==========================================================================
-     UISP CRM API Configuration
-     ========================================================================== */
-  const UISP_CONFIG = {
-    // Replace with your actual UISP instance URL (e.g., https://uisp.toutnet.ht)
-    baseUrl: "https://toutnet.unmsapp.com",
-    // Replace with your UISP API Token generated in UISP -> Settings -> Users -> API Tokens
-    appKey: "fLJoh6sBrjGiP2US3PYnIkVg6cJ+zkofxieCguxa5/OkhHyqpS+Ba4aKbBrq42fU",
-  };
+  // Initialize Supabase Client safely
+  const SUPABASE_URL = "https://edjuasgetqbcvywwrddq.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkanVhc2dldHFiY3Z5d3dyZGRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MjM2ODMsImV4cCI6MjEwNDk5OTY4M30.uzdul5_sCJGG8UvoHtsuPPqOmOfsqgstvfNRmLxBI4k";
+
+  let supabase = null;
+  if (window.supabase) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } else {
+    console.error("Supabase SDK not found in <head>. Please check your CDN script tag.");
+  }
 
   // Toast Notification Helper
   const showToast = (icon, title) => {
@@ -40,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const highlightInputError = (inputEl) => {
     if (!inputEl) return;
 
+    // Dynamically insert CSS keyframe for shake if not present
     if (!document.getElementById("shake-animation-style")) {
       const style = document.createElement("style");
       style.id = "shake-animation-style";
@@ -61,6 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
     inputEl.classList.add("input-error-shake");
     inputEl.focus();
 
+    // Remove shake after animation completes, clear error border on input
     setTimeout(() => {
       inputEl.classList.remove("input-error-shake");
     }, 400);
@@ -145,8 +148,12 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   ];
 
+  // List of covered zones
   const COVERED_ZONES = [
     "delmas",
+    "delmas 75",
+    "delmas 31",
+    "delmas 33",
     "petion-ville",
     "pétion-ville",
     "petion ville",
@@ -163,7 +170,6 @@ document.addEventListener("DOMContentLoaded", () => {
     "haut de turgeau",
     "port-au-prince",
     "laboule",
-    "bourdon",
   ];
 
   let currentStep = 1;
@@ -320,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateWizardUI();
 
-  // Modal & Geolocation Logic
+  // Modal & Geolocation Core Logic
   const leadModal = document.getElementById("leadModal");
   const openLeadModal = document.getElementById("openLeadModal");
   const closeLeadModal = document.getElementById("closeLeadModal");
@@ -466,7 +472,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const leadForm = document.getElementById("leadForm");
   const phoneInput = document.getElementById("phone");
 
-  // Phone Formatter
+  /* ==========================================================================
+     Strict Phone Input Formatter (+509 4444 5555)
+     ========================================================================== */
   function formatPhoneNumber(val) {
     let digits = val.replace(/\D/g, "");
     if (digits.startsWith("509")) {
@@ -509,7 +517,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ==========================================================================
-     Form Submission Sending Lead Data to UISP CRM API
+     Form Submission with Shake Animation & Haiti [2-5] Phone Validation
      ========================================================================== */
   if (leadForm) {
     leadForm.addEventListener("submit", async (e) => {
@@ -554,10 +562,14 @@ document.addEventListener("DOMContentLoaded", () => {
       // 4. Haitian Phone Validation [2-5]
       const rawPhone = phoneInput ? phoneInput.value : "";
       const cleanedPhone = rawPhone.replace(/\s+/g, "");
+      // Restricts valid starting digits to 2, 3, 4, or 5 for Haiti
       const haitiPhoneRegex = /^(?:\+509)?[2-5]\d{7}$/;
 
       if (!haitiPhoneRegex.test(cleanedPhone)) {
-        showToast("error", "Numéro haïtien invalide (+509 2-5XX XXXX).");
+        showToast(
+          "error",
+          "Numéro haïtien invalide (+509 2-5XX XXXX)."
+        );
         highlightInputError(phoneInput);
         return;
       }
@@ -572,7 +584,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // 6. Submit Lead to UISP CRM API
+      // 6. Submission Block
       try {
         if (submitBtn) {
           submitBtn.disabled = true;
@@ -595,59 +607,29 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.Swal) {
           Swal.fire({
             title: "Envoi en cours...",
-            text: "Connexion au système UISP CRM...",
+            text: "Veuillez patienter pendant l'enregistrement de votre demande.",
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading(),
           });
         }
 
-        // Split name into First / Last Name for UISP
-        const nameParts = name.trim().split(" ");
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(" ") || nameParts[0];
-
-        // Format payload conforming to UISP CRM Client/Lead Endpoint API Schema
-        // Payload conforming strictly to standard UISP CRM client schema
-        const uispPayload = {
-          isLead: true,
-          clientType: activeTab === "business" ? 2 : 1, // 1 = Individual, 2 = Company
-          firstName: firstName,
-          lastName: lastName,
-          companyName: activeTab === "business" ? name.trim() : null,
-          contacts: [
-            {
-              name: name.trim(),
-              phone: cleanedPhone,
-              isBilling: true,
-              isContact: true,
-            },
-          ],
-          // Flat address fields as required by official UISP API specification
-          street1: gpsString,
-          note: `Lead Web Site - Plan : ${formattedPlanName} | Zone Couverte : ${isPriorityListRequest ? "NON" : "OUI"}`,
-        };
-
-        const response = await fetch(`${UISP_CONFIG.baseUrl}/crm/api/v1.0/clients`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Auth-App-Key": UISP_CONFIG.appKey,
-          },
-          body: JSON.stringify(uispPayload),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error("UISP 422 Validation Error Details:", errorData);
-
-          const validationMessage = errorData.errors
-            ? Object.entries(errorData.errors)
-                .map(([field, msg]) => `${field}: ${msg}`)
-                .join(", ")
-            : errorData.message || `Erreur API UISP (${response.status})`;
-
-          throw new Error(validationMessage);
+        if (!supabase) {
+          throw new Error("Le client Supabase n'est pas disponible.");
         }
+
+        const { data, error } = await supabase.from("leads").insert([
+          {
+            name: name,
+            phone: rawPhone,
+            area: gpsString,
+            plan_name: formattedPlanName,
+            category: activeTab,
+            is_priority_list: isPriorityListRequest,
+            coordinates: userCoordinates,
+          },
+        ]);
+
+        if (error) throw error;
 
         localStorage.setItem(LAST_SUBMIT_KEY, Date.now().toString());
 
@@ -662,10 +644,10 @@ document.addEventListener("DOMContentLoaded", () => {
             html: `
               <p>Merci <strong>${name}</strong> !</p>
               <p style="margin-top:0.5rem; font-size:0.9rem; color:#64748b;">
-                Nous avons reçu votre demande pour le forfait <strong>${currentPlan.speed}</strong> avec les coordonnées GPS (<code>${gpsString}</code>).
+                Votre demande pour le forfait <strong>${currentPlan.speed}</strong> a été enregistrée à la position GPS (<code>${gpsString}</code>).
               </p>
               <p style="margin-top:0.5rem; font-size:0.85rem; color:#94a3b8;">
-                Notre équipe vous contactera bientôt au <strong>${rawPhone}</strong>.
+                Notre équipe vous contactera au <strong>${rawPhone}</strong>.
               </p>
             `,
             confirmButtonColor: "#7c3aed",
@@ -679,8 +661,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (phoneInput) phoneInput.value = formatPhoneNumber("");
 
       } catch (err) {
-        console.error("UISP Lead Submission Error:", err);
-        showToast("error", err.message || "Erreur de connexion avec le serveur CRM UISP.");
+        console.error("Critical Lead Submission Error:", err);
+        showToast("error", err.message || "Erreur d'envoi. Veuillez réessayer.");
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
