@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
      ========================================================================== */
 
   // Update this to match your actual deployed Render service URL
-  const PROXY_BASE_URL = "http://127.0.0.1:3001" //"https://your-app-name.onrender.com";
+  const PROXY_BASE_URL = "http://127.0.0.1:3001";
 
   // Data Tiers for Residential / Pro
   const RESIDENTIAL_TIERS = [
