@@ -3,10 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeTab = "residential";
   let isPriorityListRequest = false;
 
-  /* ==========================================================================
-     Standardized UI & Error Handling Helpers
-     ========================================================================== */
-
   // Inject High z-index Rule for SweetAlert Toasts & Modals
   if (!document.getElementById("swal-toast-zindex-style")) {
     const style = document.createElement("style");
@@ -16,15 +12,19 @@ document.addEventListener("DOMContentLoaded", () => {
       .swal2-container {
         z-index: 99999 !important;
       }
-      .swal2-toast {
-        font-family: inherit !important;
-        border-radius: 8px !important;
-      }
     `;
     document.head.appendChild(style);
   }
 
-  // Consistent Toast Notification Helper
+  /* ==========================================================================
+     UISP CRM API Configuration
+     ========================================================================== */
+  const UISP_CONFIG = {
+    baseUrl: "https://toutnet.unmsapp.com",
+    appKey: "fLJoh6sBrjGiP2US3PYnIkVg6cJ+zkofxieCguxa5/OkhHyqpS+Ba4aKbBrq42fU",
+  };
+
+  // Toast Notification Helper
   const showToast = (icon, title) => {
     if (window.Swal) {
       const Toast = Swal.mixin({
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Consistent Input Error Animation & Red Highlight
+  // Helper: Visual Shake Animation & Input Highlight
   const highlightInputError = (inputEl) => {
     if (!inputEl) return;
 
@@ -82,14 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
       inputEl.removeEventListener("input", clearError);
     };
     inputEl.addEventListener("input", clearError);
-  };
-
-  /* ==========================================================================
-     UISP CRM API Configuration
-     ========================================================================== */
-  const UISP_CONFIG = {
-    baseUrl: "https://toutnet.unmsapp.com",
-    appKey: "fLJoh6sBrjGiP2US3PYnIkVg6cJ+zkofxieCguxa5/OkhHyqpS+Ba4aKbBrq42fU",
   };
 
   // Data Tiers for Residential / Pro
@@ -534,12 +526,12 @@ document.addEventListener("DOMContentLoaded", () => {
     leadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // 1. Standardized Name Validation
+      // 1. Validate Name Field
       const nameInput = document.getElementById("name");
       const name = nameInput ? nameInput.value.trim() : "";
 
       if (!name) {
-        showToast("error", "Veuillez entrer votre nom complet ou le nom de l'entreprise.");
+        showToast("warning", "Veuillez entrer votre nom ou entreprise.");
         highlightInputError(nameInput);
         return;
       }
@@ -565,12 +557,12 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         showToast(
           "warning",
-          `Patientez ${remainingSeconds}s avant de réessayer.`
+          `Patientez ${remainingSeconds}s avant de réesayer.`
         );
         return;
       }
 
-      // 4. Standardized Haitian Phone Validation [2-5]
+      // 4. Haitian Phone Validation [2-5]
       const rawPhone = phoneInput ? phoneInput.value : "";
       const cleanedPhone = rawPhone.replace(/\s+/g, "");
       const haitiPhoneRegex = /^(?:\+509)?[2-5]\d{7}$/;
@@ -614,9 +606,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.Swal) {
           Swal.fire({
             title: "Envoi en cours...",
-            text: "Nous soumettons votre demande.",
+            text: "Connexion au système UISP CRM...",
             allowOutsideClick: false,
-            confirmButtonColor: "#7c3aed",
             didOpen: () => Swal.showLoading(),
           });
         }
@@ -642,7 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
             },
           ],
           street1: gpsString,
-          note: `Lead Web Site - Plan : ${formattedPlanName} | Zone Couverte : ${isPriorityListRequest ? "NON" : "OUI"}`,
+          note: `Lead Web Site - Plan : ${formattedPlanName} | Zone Couverte : ${isPriorityListRequest ? "NON" : "OUI"} | Priority List: ${isPriorityListRequest ? "OUI" : "NON"}`,
         };
 
         const response = await fetch(`${UISP_CONFIG.baseUrl}/crm/api/v1.0/clients`, {
@@ -680,10 +671,10 @@ document.addEventListener("DOMContentLoaded", () => {
             html: `
               <p>Merci <strong>${name}</strong> !</p>
               <p style="margin-top:0.5rem; font-size:0.9rem; color:#64748b;">
-                Nous avons reçu votre demande pour le forfait <strong>${currentPlan.speed}</strong>, pour les coordonnées GPS : <br><code>${gpsString}</code>.
+                Votre fiche CRM a été créée avec vos coordonnées GPS (<code>${gpsString}</code>).
               </p>
               <p style="margin-top:0.5rem; font-size:0.85rem; color:#94a3b8;">
-                Notre équipe vous contactera prochainement au : <br> <strong>${rawPhone}</strong>.
+                Notre équipe vous recontactera très prochainement au <strong>${rawPhone}</strong>.
               </p>
             `,
             confirmButtonColor: "#7c3aed",
@@ -760,7 +751,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const normalizedInput = normalizeText(userQuery);
 
       if (!normalizedInput) {
-        showToast("error", "Veuillez entrer un nom de quartier.");
+        showToast("warning", "Veuillez entrer un nom de quartier.");
         highlightInputError(addressInput);
         return;
       }

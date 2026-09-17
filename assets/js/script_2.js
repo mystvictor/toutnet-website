@@ -4,27 +4,16 @@ document.addEventListener("DOMContentLoaded", () => {
   let isPriorityListRequest = false;
 
   /* ==========================================================================
-     Standardized UI & Error Handling Helpers
+     UISP CRM API Configuration
      ========================================================================== */
+  const UISP_CONFIG = {
+    // Replace with your actual UISP instance URL (e.g., https://uisp.toutnet.ht)
+    baseUrl: "https://toutnet.unmsapp.com",
+    // Replace with your UISP API Token generated in UISP -> Settings -> Users -> API Tokens
+    appKey: "fLJoh6sBrjGiP2US3PYnIkVg6cJ+zkofxieCguxa5/OkhHyqpS+Ba4aKbBrq42fU",
+  };
 
-  // Inject High z-index Rule for SweetAlert Toasts & Modals
-  if (!document.getElementById("swal-toast-zindex-style")) {
-    const style = document.createElement("style");
-    style.id = "swal-toast-zindex-style";
-    style.textContent = `
-      .swal2-container.swal2-top-end,
-      .swal2-container {
-        z-index: 99999 !important;
-      }
-      .swal2-toast {
-        font-family: inherit !important;
-        border-radius: 8px !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // Consistent Toast Notification Helper
+  // Toast Notification Helper
   const showToast = (icon, title) => {
     if (window.Swal) {
       const Toast = Swal.mixin({
@@ -47,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Consistent Input Error Animation & Red Highlight
+  // Helper: Visual Shake Animation & Input Highlight
   const highlightInputError = (inputEl) => {
     if (!inputEl) return;
 
@@ -82,14 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
       inputEl.removeEventListener("input", clearError);
     };
     inputEl.addEventListener("input", clearError);
-  };
-
-  /* ==========================================================================
-     UISP CRM API Configuration
-     ========================================================================== */
-  const UISP_CONFIG = {
-    baseUrl: "https://toutnet.unmsapp.com",
-    appKey: "fLJoh6sBrjGiP2US3PYnIkVg6cJ+zkofxieCguxa5/OkhHyqpS+Ba4aKbBrq42fU",
   };
 
   // Data Tiers for Residential / Pro
@@ -534,12 +515,12 @@ document.addEventListener("DOMContentLoaded", () => {
     leadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // 1. Standardized Name Validation
+      // 1. Validate Name Field
       const nameInput = document.getElementById("name");
       const name = nameInput ? nameInput.value.trim() : "";
 
       if (!name) {
-        showToast("error", "Veuillez entrer votre nom complet ou le nom de l'entreprise.");
+        showToast("warning", "Veuillez entrer votre nom ou entreprise.");
         highlightInputError(nameInput);
         return;
       }
@@ -565,18 +546,18 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         showToast(
           "warning",
-          `Patientez ${remainingSeconds}s avant de réessayer.`
+          `Patientez ${remainingSeconds}s avant de réesayer.`
         );
         return;
       }
 
-      // 4. Standardized Haitian Phone Validation [2-5]
+      // 4. Haitian Phone Validation [2-5]
       const rawPhone = phoneInput ? phoneInput.value : "";
       const cleanedPhone = rawPhone.replace(/\s+/g, "");
       const haitiPhoneRegex = /^(?:\+509)?[2-5]\d{7}$/;
 
       if (!haitiPhoneRegex.test(cleanedPhone)) {
-        showToast("error", "Numéro haïtien invalide (+509 2-5XX XXXX).");
+        showToast("error", "Veuillez entrer un numéro d'Haïti valide (+509 2-5XX XXXX).");
         highlightInputError(phoneInput);
         return;
       }
@@ -614,9 +595,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (window.Swal) {
           Swal.fire({
             title: "Envoi en cours...",
-            text: "Nous soumettons votre demande.",
+            text: "Connexion au système UISP CRM...",
             allowOutsideClick: false,
-            confirmButtonColor: "#7c3aed",
             didOpen: () => Swal.showLoading(),
           });
         }
@@ -626,7 +606,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const firstName = nameParts[0];
         const lastName = nameParts.slice(1).join(" ") || nameParts[0];
 
-        // Conforming payload strictly to UISP CRM API Client schema
+        // Format payload conforming to UISP CRM Client/Lead Endpoint API Schema
+        // Payload conforming strictly to standard UISP CRM client schema
         const uispPayload = {
           isLead: true,
           clientType: activeTab === "business" ? 2 : 1, // 1 = Individual, 2 = Company
@@ -641,6 +622,7 @@ document.addEventListener("DOMContentLoaded", () => {
               isContact: true,
             },
           ],
+          // Flat address fields as required by official UISP API specification
           street1: gpsString,
           note: `Lead Web Site - Plan : ${formattedPlanName} | Zone Couverte : ${isPriorityListRequest ? "NON" : "OUI"}`,
         };
@@ -656,12 +638,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error("UISP CRM Error Details:", errorData);
+          console.error("UISP 422 Validation Error Details:", errorData);
 
           const validationMessage = errorData.errors
             ? Object.entries(errorData.errors)
-                .map(([field, msg]) => `${field}: ${Array.isArray(msg) ? msg.join(", ") : msg}`)
-                .join(" | ")
+                .map(([field, msg]) => `${field}: ${msg}`)
+                .join(", ")
             : errorData.message || `Erreur API UISP (${response.status})`;
 
           throw new Error(validationMessage);
@@ -674,23 +656,22 @@ document.addEventListener("DOMContentLoaded", () => {
           : "Demande envoyée avec succès !";
 
         if (window.Swal) {
-          await Swal.fire({
+          Swal.fire({
             icon: "success",
             title: successTitle,
             html: `
               <p>Merci <strong>${name}</strong> !</p>
               <p style="margin-top:0.5rem; font-size:0.9rem; color:#64748b;">
-                Nous avons reçu votre demande pour le forfait <strong>${currentPlan.speed}</strong>, pour les coordonnées GPS : <br><code>${gpsString}</code>.
+                Nous avons reçu votre demande pour le forfait <strong>${currentPlan.speed}</strong> avec les coordonnées GPS (<code>${gpsString}</code>).
               </p>
               <p style="margin-top:0.5rem; font-size:0.85rem; color:#94a3b8;">
-                Notre équipe vous contactera prochainement au : <br> <strong>${rawPhone}</strong>.
+                Notre équipe vous contactera bientôt au <strong>${rawPhone}</strong>.
               </p>
             `,
             confirmButtonColor: "#7c3aed",
           });
         }
 
-        // Reset form and close modal ONLY after successful API response
         if (leadModal) leadModal.classList.remove("active");
         leadForm.reset();
         isPriorityListRequest = false;
@@ -699,17 +680,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       } catch (err) {
         console.error("UISP Lead Submission Error:", err);
-
-        if (window.Swal) {
-          Swal.fire({
-            icon: "error",
-            title: "Échec de l'envoi",
-            text: err.message || "Impossible de contacter le serveur CRM UISP. Réessayez plus tard.",
-            confirmButtonColor: "#ef4444",
-          });
-        } else {
-          alert(`Erreur d'envoi: ${err.message}`);
-        }
+        showToast("error", err.message || "Erreur de connexion avec le serveur CRM UISP.");
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -760,7 +731,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const normalizedInput = normalizeText(userQuery);
 
       if (!normalizedInput) {
-        showToast("error", "Veuillez entrer un nom de quartier.");
+        showToast("warning", "Veuillez entrer un nom de quartier.");
         highlightInputError(addressInput);
         return;
       }
