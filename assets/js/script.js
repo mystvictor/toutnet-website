@@ -192,7 +192,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const mobileMenu = document.getElementById("mobileMenu");
   const mobileOverlay = document.getElementById("mobileOverlay");
   const mobileLinks = document.querySelectorAll(".mobile-link");
-  const btnTesterAdresseMobile = document.getElementById("btnTesterAdresseMobile");
+  const btnTesterAdresseMobile = document.getElementById(
+    "btnTesterAdresseMobile",
+  );
 
   function toggleMobileMenu() {
     if (mobileMenu) mobileMenu.classList.toggle("active");
@@ -248,7 +250,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateWizardUI() {
-    const activeData = activeTab === "residential" ? RESIDENTIAL_TIERS : BUSINESS_TIERS;
+    const activeData =
+      activeTab === "residential" ? RESIDENTIAL_TIERS : BUSINESS_TIERS;
     const data = activeData[currentStep];
 
     if (speedDisplay) speedDisplay.textContent = data.speed;
@@ -272,7 +275,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (btnPlus) {
       btnPlus.disabled = currentStep === activeData.length - 1;
-      btnPlus.style.opacity = currentStep === activeData.length - 1 ? "0.4" : "1";
+      btnPlus.style.opacity =
+        currentStep === activeData.length - 1 ? "0.4" : "1";
     }
   }
 
@@ -283,7 +287,8 @@ document.addEventListener("DOMContentLoaded", () => {
       tabInternet.className = "tab-btn active";
       if (tabCombo) tabCombo.className = "tab-btn inactive";
 
-      if (planCategoryTitle) planCategoryTitle.textContent = "Forfait Pro / Résidentiel";
+      if (planCategoryTitle)
+        planCategoryTitle.textContent = "Forfait Pro / Résidentiel";
       if (planSpecsGrid) {
         planSpecsGrid.innerHTML = `
           <div><span>✓</span> Wi-Fi 6 inclus</div>
@@ -303,7 +308,8 @@ document.addEventListener("DOMContentLoaded", () => {
       tabCombo.className = "tab-btn active";
       if (tabInternet) tabInternet.className = "tab-btn inactive";
 
-      if (planCategoryTitle) planCategoryTitle.textContent = "AirFiber Enterprise Dedicated";
+      if (planCategoryTitle)
+        planCategoryTitle.textContent = "AirFiber Enterprise Dedicated";
       if (planSpecsGrid) {
         planSpecsGrid.innerHTML = `
           <div><span>✓</span> Débit 1:1 Simétrique</div>
@@ -329,7 +335,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnPlus) {
     btnPlus.addEventListener("click", () => {
-      const activeData = activeTab === "residential" ? RESIDENTIAL_TIERS : BUSINESS_TIERS;
+      const activeData =
+        activeTab === "residential" ? RESIDENTIAL_TIERS : BUSINESS_TIERS;
       if (currentStep < activeData.length - 1) {
         currentStep++;
         updateWizardUI();
@@ -398,7 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
               showToast("error", msg);
               reject(error);
             },
-            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
           );
         });
       }
@@ -407,11 +414,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const selectPlanModal = async () => {
     const resOptions = RESIDENTIAL_TIERS.map(
-      (p, i) => `<option value="res_${i}">${p.speed} - ${p.price}/mois (Résidentiel/Pro)</option>`
+      (p, i) =>
+        `<option value="res_${i}">${p.speed} - ${p.price}/mois (Résidentiel/Pro)</option>`,
     ).join("");
 
     const busOptions = BUSINESS_TIERS.map(
-      (p, i) => `<option value="bus_${i}">${p.speed} - ${p.price}/mois (Dédié Entreprise)</option>`
+      (p, i) =>
+        `<option value="bus_${i}">${p.speed} - ${p.price}/mois (Dédié Entreprise)</option>`,
     ).join("");
 
     const { value: selectedVal } = await Swal.fire({
@@ -453,7 +462,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return false;
   };
 
-  const openOrderModalWithGPS = async (priorityFlag = false, promptPlanSelect = false) => {
+  const openOrderModalWithGPS = async (
+    priorityFlag = false,
+    promptPlanSelect = false,
+  ) => {
     isPriorityListRequest = priorityFlag;
 
     if (!userCoordinates) {
@@ -475,11 +487,15 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   if (openLeadModal) {
-    openLeadModal.addEventListener("click", () => openOrderModalWithGPS(false, false));
+    openLeadModal.addEventListener("click", () =>
+      openOrderModalWithGPS(false, false),
+    );
   }
 
   if (closeLeadModal && leadModal) {
-    closeLeadModal.addEventListener("click", () => leadModal.classList.remove("active"));
+    closeLeadModal.addEventListener("click", () =>
+      leadModal.classList.remove("active"),
+    );
   }
 
   const leadForm = document.getElementById("leadForm");
@@ -522,10 +538,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
     phoneInput.addEventListener("focus", () => {
       if (phoneInput.selectionStart < 5) {
-        phoneInput.setSelectionRange(phoneInput.value.length, phoneInput.value.length);
+        phoneInput.setSelectionRange(
+          phoneInput.value.length,
+          phoneInput.value.length,
+        );
       }
     });
   }
+
+  // Helper to check if user coordinates fall inside any UISP CRM Service Area
+  const checkUISPCoverage = async (latitude, longitude) => {
+    try {
+      const response = await fetch(
+        `${UISP_CONFIG.baseUrl}/crm/api/v1.0/service-areas`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Auth-App-Key": UISP_CONFIG.appKey,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        console.warn(
+          "Could not fetch service areas from UISP CRM, defaulting to manual/list check.",
+        );
+        return null; // Fallback gracefully if endpoint isn't accessible
+      }
+
+      const serviceAreas = await response.json();
+      if (!Array.isArray(serviceAreas) || serviceAreas.length === 0) {
+        return null;
+      }
+
+      // Ray-Casting Point-in-Polygon check algorithm
+      const isPointInPolygon = (point, vs) => {
+        const x = point[0],
+          y = point[1];
+        let inside = false;
+        for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+          const xi = vs[i][0],
+            yi = vs[i][1];
+          const xj = vs[j][0],
+            yj = vs[j][1];
+          const intersect =
+            yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      };
+
+      // Iterate through configured Service Areas
+      for (const area of serviceAreas) {
+        if (area.geometry && area.geometry.coordinates) {
+          // UISP Polygon coordinates format: [[[lng, lat], [lng, lat], ...]]
+          const polygonCoords = area.geometry.coordinates[0];
+          const isInside = isPointInPolygon(
+            [longitude, latitude],
+            polygonCoords,
+          );
+          if (isInside) {
+            return { isCovered: true, areaName: area.name || "Zone Couverte" };
+          }
+        }
+      }
+
+      return { isCovered: false, areaName: null };
+    } catch (err) {
+      console.error("UISP Service Area API Error:", err);
+      return null; // Return null on error to allow graceful fallback
+    }
+  };
 
   /* ==========================================================================
      Form Submission Sending Lead Data to UISP CRM API
@@ -539,7 +623,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const name = nameInput ? nameInput.value.trim() : "";
 
       if (!name) {
-        showToast("error", "Veuillez entrer votre nom complet ou le nom de l'entreprise.");
+        showToast(
+          "error",
+          "Veuillez entrer votre nom complet ou le nom de l'entreprise.",
+        );
         highlightInputError(nameInput);
         return;
       }
@@ -561,11 +648,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (lastSubmit && Date.now() - parseInt(lastSubmit, 10) < COOLDOWN_TIME) {
         const remainingSeconds = Math.ceil(
-          (COOLDOWN_TIME - (Date.now() - parseInt(lastSubmit, 10))) / 1000
+          (COOLDOWN_TIME - (Date.now() - parseInt(lastSubmit, 10))) / 1000,
         );
         showToast(
           "warning",
-          `Patientez ${remainingSeconds}s avant de réessayer.`
+          `Patientez ${remainingSeconds}s avant de réessayer.`,
         );
         return;
       }
@@ -590,6 +677,23 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
       }
+
+      // 5b. Perform UISP CRM Coverage Verification
+      /* if (window.Swal) {
+        Swal.fire({
+          title: "Vérification de la couverture...",
+          text: "Interrogation du réseau AirFiber UISP en cours.",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
+      }
+
+      const coverageResult = await checkUISPCoverage(
+        userCoordinates.latitude,
+        userCoordinates.longitude,
+      );
+
+      console.log("Coverage result: ", coverageResult) */
 
       // 6. Submit Lead to UISP CRM API
       try {
@@ -645,14 +749,17 @@ document.addEventListener("DOMContentLoaded", () => {
           note: `Lead Web Site - Plan : ${formattedPlanName} | Zone Couverte : ${isPriorityListRequest ? "NON" : "OUI"}`,
         };
 
-        const response = await fetch(`${UISP_CONFIG.baseUrl}/crm/api/v1.0/clients`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Auth-App-Key": UISP_CONFIG.appKey,
+        const response = await fetch(
+          `${UISP_CONFIG.baseUrl}/crm/api/v1.0/clients`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Auth-App-Key": UISP_CONFIG.appKey,
+            },
+            body: JSON.stringify(uispPayload),
           },
-          body: JSON.stringify(uispPayload),
-        });
+        );
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -660,7 +767,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const validationMessage = errorData.errors
             ? Object.entries(errorData.errors)
-                .map(([field, msg]) => `${field}: ${Array.isArray(msg) ? msg.join(", ") : msg}`)
+                .map(
+                  ([field, msg]) =>
+                    `${field}: ${Array.isArray(msg) ? msg.join(", ") : msg}`,
+                )
                 .join(" | ")
             : errorData.message || `Erreur API UISP (${response.status})`;
 
@@ -696,7 +806,6 @@ document.addEventListener("DOMContentLoaded", () => {
         isPriorityListRequest = false;
         userCoordinates = null;
         if (phoneInput) phoneInput.value = formatPhoneNumber("");
-
       } catch (err) {
         console.error("UISP Lead Submission Error:", err);
 
@@ -704,7 +813,9 @@ document.addEventListener("DOMContentLoaded", () => {
           Swal.fire({
             icon: "error",
             title: "Échec de l'envoi",
-            text: err.message || "Impossible de contacter le serveur CRM UISP. Réessayez plus tard.",
+            text:
+              err.message ||
+              "Impossible de contacter le serveur CRM UISP. Réessayez plus tard.",
             confirmButtonColor: "#ef4444",
           });
         } else {
@@ -733,10 +844,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Bind Navbar GPS trigger buttons
   const btnTesterAdresseNav = document.getElementById("btnTesterAdresseNav");
   if (btnTesterAdresseNav) {
-    btnTesterAdresseNav.addEventListener("click", () => openOrderModalWithGPS(false, true));
+    btnTesterAdresseNav.addEventListener("click", () =>
+      openOrderModalWithGPS(false, true),
+    );
   }
   if (btnTesterAdresseMobile) {
-    btnTesterAdresseMobile.addEventListener("click", () => openOrderModalWithGPS(false, true));
+    btnTesterAdresseMobile.addEventListener("click", () =>
+      openOrderModalWithGPS(false, true),
+    );
   }
 
   function normalizeText(text) {
@@ -766,7 +881,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const isCovered = COVERED_ZONES.some((zone) =>
-        normalizedInput.includes(normalizeText(zone))
+        normalizedInput.includes(normalizeText(zone)),
       );
 
       if (isCovered) {
