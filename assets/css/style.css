@@ -956,3 +956,7 @@
       color: var(--text-white);
     }
 
+    .text-red-500 {
+      color: rgb(151, 28, 53);
+    }
+

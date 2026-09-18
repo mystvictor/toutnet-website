@@ -7,12 +7,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
     <!-- Core Primary SEO -->
-    <title>
-      Toutnet SA — L'Internet Ultra-Rapide par AirFiber en Haïti
-    </title>
+    <title>Toutnet SA — L'Internet Ultra-Rapide par AirFiber en Haïti</title>
     <meta
-        name="title"
-        content="Toutnet SA - L'Internet Ultra-Rapide par AirFiber en Haïti"
+      name="title"
+      content="Toutnet SA - L'Internet Ultra-Rapide par AirFiber en Haïti"
     />
     <meta
       name="description"
@@ -292,7 +290,7 @@
       <!-- 3. Key Features Section -->
       <section id="features">
         <div class="container">
-          <h2 class="section-title">Pourquoi choisir Toutnet AirFiber ?</h2>
+          <h2 class="section-title">Pourquoi choisir <span class="text-gradient">Toutnet </span> AirFiber ?</h2>
           <p class="section-subtitle">
             Une technologie conçue pour surmonter les défis d'infrastructures à
             Port-au-Prince.
@@ -356,37 +354,61 @@
         </div>
       </section>
 
-      <!-- 4. Coverage Eligibility Section -->
-      <section id="coverage">
+      <!-- 4. How It Works Section -->
+      <section id="how-it-works">
         <div class="container">
-          <div class="coverage-card">
-            <h2 class="section-title">
-              Vérifiez la couverture dans votre zone
-            </h2>
-            <p class="section-subtitle" style="margin-bottom: 0">
-              Disponible sur Port-au-Prince, Pétion-Ville, Delmas, Tabarre et
-              environs.
-            </p>
+          <h2 class="section-title">
+            Comment obtenir votre <span class="text-gradient">Connexion</span>
+          </h2>
+          <p class="section-subtitle">
+            Un processus simple et rapide en 3 étapes pour être connecté sans attente.
+          </p>
 
-            <form class="coverage-form" id="coverageForm">
-              <input
-                type="text"
-                id="addressInput"
-                placeholder="Entrez votre quartier (ex: Delmas 75, Bois Verna...)"
-                class="coverage-input"
-                aria-label="Rechercher votre quartier pour vérifier l'éligibilité"
-                required
-              />
-              <button
-                type="submit"
-                id="btnTesterAdresseSection"
-                class="btn-select-plan"
-                style="padding: 0.75rem 1.25rem"
-              >
-                Vérifier ma Zone
-              </button>
-            </form>
+          <!-- 3-Column Grid matching top section exactly -->
+          <div class="features-grid" style="text-align: left;">
+            
+            <!-- Step 1 -->
+            <div class="feature-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <span style="font-family: var(--font-family); font-size: 2.25rem; font-weight: 800; color: var(--accent-purple); display: block; margin-bottom: 0.5rem; line-height: 1;">01</span>
+                <h3 class="feature-title">Demande en ligne</h3>
+                <p class="feature-desc">
+                  Choisissez votre forfait et remplissez notre formulaire de demande de service.
+                </p>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="feature-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <span style="font-family: var(--font-family); font-size: 2.25rem; font-weight: 800; color: var(--accent-purple); display: block; margin-bottom: 0.5rem; line-height: 1;">02</span>
+                <h3 class="feature-title">Validation & RDV</h3>
+                <p class="feature-desc">
+                  Notre équipe vérifie le signal à votre adresse et planifie l'intervention sous 24h.
+                </p>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="feature-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <span style="font-family: var(--font-family); font-size: 2.25rem; font-weight: 800; color: var(--accent-purple); display: block; margin-bottom: 0.5rem; line-height: 1;">03</span>
+                <h3 class="feature-title">Installation AirFiber</h3>
+                <p class="feature-desc">
+                  Nos techniciens installent l'antenne et le routeur Wi-Fi. Vous êtes connecté immédiatement.
+                </p>
+              </div>
+            </div>
+
           </div>
+
+          <!-- Call to Action -->
+          <div style="text-align: center; margin-top: 2.5rem;">
+            <button class="btn-select-plan" onclick="document.getElementById('openLeadModal').click()">
+              Commander Mon Accès
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -525,29 +547,54 @@
 
         <form id="leadForm">
           <!-- Honeypot Field (Invisible to real users, traps automated spam bots) -->
-          <div style="display: none !important;" aria-hidden="true">
+          <div style="display: none !important" aria-hidden="true">
             <label for="address_hp">Leave this field blank</label>
-            <input type="text" id="address_hp" name="address_hp" tabindex="-1" autocomplete="off" />
-          </div>
-
-          <div class="form-group">
-            <label for="name">Nom Complet / Nom de l'entreprise</label>
             <input
               type="text"
-              id="name"
-              class="form-control"
-              placeholder="Nom ou Entreprise"
+              id="address_hp"
+              name="address_hp"
+              tabindex="-1"
+              autocomplete="off"
             />
           </div>
 
           <div class="form-group">
-            <label for="phone">Numéro Téléphone (+509)</label>
+            <label for="name"
+              >Nom Complet / Nom de l'entreprise
+              <span class="text-red-500">*</span></label
+            >
+            <input
+              type="text"
+              id="name"
+              class="form-control"
+              placeholder="Nom Complet ou Entreprise"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="phone"
+              >Numéro Téléphone (+509)
+              <span class="text-red-500">*</span></label
+            >
             <input
               type="tel"
               id="phone"
               class="form-control"
               value="+509 "
               placeholder="+509 4444 5555"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="zone"
+              >Zone / Quartier <span class="text-red-500">*</span></label
+            >
+            <input
+              type="text"
+              id="zone"
+              name="zone"
+              class="form-control"
+              placeholder="Ex: Delmas 83, Bois Moquette, Turgeau..."
             />
           </div>
 

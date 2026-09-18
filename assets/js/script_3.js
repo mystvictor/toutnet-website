@@ -4,81 +4,25 @@ document.addEventListener("DOMContentLoaded", () => {
   let isPriorityListRequest = false;
 
   /* ==========================================================================
-     Standardized UI & SweetAlert2 Configuration
+     Standardized UI & Error Handling Helpers
      ========================================================================== */
 
-  // Inject Global SweetAlert Custom CSS for High Contrast Dark Mode
-  if (!document.getElementById("swal-unified-style")) {
+  if (!document.getElementById("swal-toast-zindex-style")) {
     const style = document.createElement("style");
-    style.id = "swal-unified-style";
+    style.id = "swal-toast-zindex-style";
     style.textContent = `
       .swal2-container.swal2-top-end,
       .swal2-container {
         z-index: 99999 !important;
       }
-      .swal2-popup {
+      .swal2-toast {
         font-family: inherit !important;
-        border-radius: 16px !important;
-        padding: 1.75rem !important;
-        background: #121026 !important; /* Matches your modal dark theme */
-        color: #f8fafc !important;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
-      }
-      .swal2-title {
-        font-size: 1.35rem !important;
-        font-weight: 700 !important;
-        color: #ffffff !important; /* High contrast visible title */
-        margin-top: 0.5rem !important;
-      }
-      .swal2-html-container {
-        font-size: 0.95rem !important;
-        color: #cbd5e1 !important; /* Muted readable text */
-        margin-top: 0.75rem !important;
-      }
-      .swal2-styled.swal2-confirm {
-        background-color: #7c3aed !important;
-        color: #ffffff !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        padding: 0.65rem 1.4rem !important;
-      }
-      .swal2-styled.swal2-cancel {
-        background-color: #475569 !important;
-        color: #ffffff !important;
-        border-radius: 8px !important;
-        font-weight: 500 !important;
-        padding: 0.65rem 1.4rem !important;
-      }
-      .swal-custom-box {
-        text-align: left;
-        background: #1e1b4b;
-        border: 1px solid #312e81;
-        padding: 0.85rem;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        color: #e2e8f0;
-        margin-top: 0.85rem;
-      }
-      .swal2-select {
-        background-color: #1e1b4b !important;
-        color: #ffffff !important;
-        border: 1px solid #4338ca !important;
         border-radius: 8px !important;
       }
     `;
     document.head.appendChild(style);
   }
 
-  // SweetAlert Theme Palette Defaults
-  const SWAL_THEME = {
-    confirmButtonColor: "#7c3aed",
-    cancelButtonColor: "#475569",
-    dangerButtonColor: "#ef4444",
-    background: "#121026",
-    color: "#ffffff",
-  };
-
-  // Helper 1: Standardized Toast Notifications
   const showToast = (icon, title) => {
     if (window.Swal) {
       const Toast = Swal.mixin({
@@ -92,36 +36,13 @@ document.addEventListener("DOMContentLoaded", () => {
           toast.addEventListener("mouseleave", Swal.resumeTimer);
         },
       });
-      Toast.fire({ icon, title });
+      Toast.fire({
+        icon: icon,
+        title: title,
+      });
     } else {
       alert(`${icon.toUpperCase()}: ${title}`);
     }
-  };
-
-  // Helper 2: Standardized Dialog Modals
-  const showStandardAlert = (options) => {
-    if (!window.Swal) {
-      if (options.text || options.html) alert(options.title);
-      return Promise.resolve({ isConfirmed: true });
-    }
-
-    return Swal.fire({
-      confirmButtonColor: SWAL_THEME.confirmButtonColor,
-      cancelButtonColor: SWAL_THEME.cancelButtonColor,
-      ...options,
-    });
-  };
-
-  // Helper 3: Standardized Loading Modal
-  const showLoadingModal = (title, text) => {
-    if (!window.Swal) return;
-    return Swal.fire({
-      title,
-      text,
-      allowOutsideClick: false,
-      showConfirmButton: false,
-      didOpen: () => Swal.showLoading(),
-    });
   };
 
   const highlightInputError = (inputEl) => {
@@ -161,12 +82,12 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   /* ==========================================================================
-     Mock Coverage Data & Pricing Tiers
+     Render Proxy API Configuration & Mock Coverage Data
      ========================================================================== */
 
   const PROXY_BASE_URL = "http://127.0.0.1:3001";
 
-  /* const MOCK_COVERAGE_POLYGONS = [
+  const MOCK_COVERAGE_POLYGONS = [
     {
       name: "Delmas Coverage Zone",
       geometry: {
@@ -191,65 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
             [-72.26, 18.535],
             [-72.3, 18.535],
             [-72.3, 18.5],
-          ],
-        ],
-      },
-    },
-    {
-      name: "Tabarre Coverage Zone",
-      geometry: {
-        coordinates: [
-          [
-            [-72.3000, 18.5000],
-            [-72.2600, 18.5000],
-            [-72.2600, 18.5350],
-            [-72.3000, 18.5350],
-            [-72.3000, 18.5000]
-          ]
-        ]
-      }
-    }
-  ]; */
-
-  const MOCK_COVERAGE_POLYGONS = [
-    {
-      name: "Delmas",
-      geometry: {
-        coordinates: [
-          [
-            [-72.33, 18.54],
-            [-72.28, 18.54],
-            [-72.28, 18.58],
-            [-72.33, 18.58],
-            [-72.33, 18.54],
-          ],
-        ],
-      },
-    },
-    {
-      name: "Pétion-Ville",
-      geometry: {
-        coordinates: [
-          [
-            [-72.3, 18.5],
-            [-72.26, 18.5],
-            [-72.26, 18.535],
-            [-72.3, 18.535],
-            [-72.3, 18.5],
-          ],
-        ],
-      },
-    },
-    {
-      name: "Tabarre",
-      geometry: {
-        coordinates: [
-          [
-            [-72.3, 18.57], 
-            [-72.25, 18.57], 
-            [-72.25, 18.6],
-            [-72.3, 18.6], 
-            [-72.3, 18.57], 
           ],
         ],
       },
@@ -493,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeLeadModal = document.getElementById("closeLeadModal");
   const submitBtn = document.getElementById("btnSubmitLead");
 
-  // Acquire GPS Position
+  // Step 1: Acquire GPS Position
   const captureGPSCoordinates = () => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -502,11 +364,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const requestPosition = () => {
-        showStandardAlert({
-          icon: "info",
+        Swal.fire({
           title: "Géolocalisation Requise",
           text: "Veuillez autoriser l'accès GPS pour vérifier si votre zone est couverte.",
+          icon: "info",
           confirmButtonText: "Autoriser mon GPS",
+          confirmButtonColor: "#7c3aed",
           showCancelButton: true,
           cancelButtonText: "Annuler",
           allowOutsideClick: false,
@@ -516,10 +379,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return reject(new Error("Permission denied by user"));
           }
 
-          showLoadingModal(
-            "Acquisition GPS...",
-            "Calcul de votre position exacte en cours.",
-          );
+          Swal.fire({
+            title: "Acquisition de la position GPS...",
+            text: "Calcul de votre position exacte en cours.",
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+          });
 
           navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -540,14 +405,15 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             (error) => {
               if (error.code === error.PERMISSION_DENIED) {
-                showStandardAlert({
+                // Handle browser-level hard block
+                Swal.fire({
                   icon: "warning",
                   title: "Accès GPS Bloqué",
                   html: `
-                    <p>L'accès à votre position est bloqué par votre navigateur.</p>
-                    <div class="swal-custom-box">
+                    <p style="margin-bottom: 0.75rem;">L'accès à votre position est bloqué par votre navigateur.</p>
+                    <div style="text-align: left; background: #f8fafc; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; color: #475569;">
                       <strong>Pour débloquer :</strong><br/>
-                      1. Cliquez sur l'icône de cadenas 🔒 dans la barre d'adresse.<br/>
+                      1. Cliquez sur l'icône de cadenas/réglages 🔒 dans la barre d'adresse.<br/>
                       2. Activez l'autorisation <strong>"Localisation"</strong>.<br/>
                       3. Cliquez sur <strong>Réessayer</strong> ci-dessous.
                     </div>
@@ -555,6 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   showCancelButton: true,
                   confirmButtonText: "Réessayer",
                   cancelButtonText: "Annuler",
+                  confirmButtonColor: "#7c3aed",
                 }).then((retryRes) => {
                   if (retryRes.isConfirmed) {
                     requestPosition();
@@ -579,45 +446,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Ray-casting algorithm (Expects point as [lng, lat] and polygon as [[lng, lat], ...])
+  /* ==========================================================================
+     Ray-Casting Algorithm & Local Polygon Verification
+     ========================================================================== */
   const isPointInPolygon = (point, vs) => {
     const x = point[0],
       y = point[1];
     let inside = false;
-
     for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
       const xi = vs[i][0],
         yi = vs[i][1];
       const xj = vs[j][0],
         yj = vs[j][1];
-
       const intersect =
         yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
       if (intersect) inside = !inside;
     }
-
     return inside;
   };
 
-  // Checks coverage and returns details if inside a zone
+  // Step 2: Check if GPS Position is in MOCK_COVERAGE_POLYGONS
   const checkMockCoverage = (latitude, longitude) => {
-    // GeoJSON standard uses [longitude, latitude]
-    const userPoint = [longitude, latitude];
-
     for (const area of MOCK_COVERAGE_POLYGONS) {
       const polygonCoords = area.geometry.coordinates[0];
-      if (isPointInPolygon(userPoint, polygonCoords)) {
-        return {
-          isCovered: true,
-          zoneName: area.name,
-        };
+      if (isPointInPolygon([longitude, latitude], polygonCoords)) {
+        return true;
       }
     }
-
-    return {
-      isCovered: false,
-      zoneName: null,
-    };
+    return false;
   };
 
   const selectPlanModal = async () => {
@@ -631,11 +487,13 @@ document.addEventListener("DOMContentLoaded", () => {
         `<option value="bus_${i}">${p.speed} - ${p.price}/mois (Dédié Entreprise)</option>`,
     ).join("");
 
-    const { value: selectedVal } = await showStandardAlert({
+    const { value: selectedVal } = await Swal.fire({
       title: "Sélectionnez votre Forfait",
       html: `
-        <p>Choisissez le forfait qui convient le mieux à vos besoins :</p>
-        <select id="swalPlanSelect" class="swal2-input" style="width: 100%; margin-top: 1rem;">
+        <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #64748b;">
+          Choisissez le forfait qui convient le mieux à vos besoins :
+        </p>
+        <select id="swalPlanSelect" class="swal2-input" style="width: 100%; max-width: 100%;">
           <optgroup label="Forfaits Résidentiel / Pro">
             ${resOptions}
           </optgroup>
@@ -648,7 +506,10 @@ document.addEventListener("DOMContentLoaded", () => {
       showCancelButton: true,
       confirmButtonText: "Valider le Forfait",
       cancelButtonText: "Annuler",
-      preConfirm: () => document.getElementById("swalPlanSelect").value,
+      confirmButtonColor: "#7c3aed",
+      preConfirm: () => {
+        return document.getElementById("swalPlanSelect").value;
+      },
     });
 
     if (selectedVal) {
@@ -680,6 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ) => {
     isPriorityListRequest = priorityFlag;
 
+    // 1. Acquire GPS position
     if (!userCoordinates) {
       try {
         await captureGPSCoordinates();
@@ -689,6 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // 2. Check if GPS position is in MOCK_COVERAGE_POLYGONS
     if (userCoordinates) {
       const isCovered = checkMockCoverage(
         userCoordinates.latitude,
@@ -700,16 +563,27 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         isPriorityListRequest = true;
 
-        const result = await showStandardAlert({
-          icon: "info",
-          title: "Pas de Couverture Directe",
-          text: "Votre secteur ne figure pas encore dans notre zone d'accès actif. Inscrivez-vous sur notre liste prioritaire pour être prévenu dès que la zone sera desservie.",
-          showCancelButton: true,
-          confirmButtonText: "S'inscrire sur Liste Prioritaire",
-          cancelButtonText: "Annuler",
-        });
+        if (window.Swal) {
+          const result = await Swal.fire({
+            icon: "info",
+            title: "Pas de Couverture Directe",
+            html: `
+              <p style="margin-top: 0.5rem; font-size: 0.95rem; color: #94a3b8;">
+                Votre secteur ne figure pas encore dans notre zone d'accès actif.
+                Inscrivez-vous sur notre liste prioritaire pour être prévenu dès que la zone sera desservie.
+              </p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: "S'inscrire sur Liste Prioritaire",
+            cancelButtonText: "Annuler",
+            confirmButtonColor: "#7c3aed",
+            cancelButtonColor: "#6b7280",
+          });
 
-        if (!result.isConfirmed) return;
+          if (!result.isConfirmed) {
+            return;
+          }
+        }
       }
     }
 
@@ -735,6 +609,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  // Close modal when pressing Escape key
   document.addEventListener("keydown", (e) => {
     if (
       e.key === "Escape" &&
@@ -748,6 +623,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const leadForm = document.getElementById("leadForm");
   const phoneInput = document.getElementById("phone");
 
+  // Phone Formatter
   function formatPhoneNumber(val) {
     let digits = val.replace(/\D/g, "");
     if (digits.startsWith("509")) {
@@ -793,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ==========================================================================
-     Form Submission Handling
+     Form Submission Sending Lead Data via Render Proxy
      ========================================================================== */
   if (leadForm) {
     leadForm.addEventListener("submit", async (e) => {
@@ -881,7 +757,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const formattedPlanName = `${categoryLabel} - ${currentPlan.speed} (${currentPlan.price}/mois)`;
         const gpsString = `Lat ${userCoordinates.latitude.toFixed(5)}, Long ${userCoordinates.longitude.toFixed(5)}`;
 
-        showLoadingModal("Envoi en cours...", "Nous soumettons votre demande.");
+        if (window.Swal) {
+          Swal.fire({
+            title: "Envoi en cours...",
+            text: "Nous soumettons votre demande.",
+            allowOutsideClick: false,
+            confirmButtonColor: "#7c3aed",
+            didOpen: () => Swal.showLoading(),
+          });
+        }
 
         const nameParts = name.trim().split(" ");
         const firstName = nameParts[0];
@@ -934,20 +818,22 @@ document.addEventListener("DOMContentLoaded", () => {
           ? "Inscrit sur Liste Prioritaire !"
           : "Demande envoyée avec succès !";
 
-        await showStandardAlert({
-          icon: "success",
-          title: successTitle,
-          html: `
-            <p>Merci <strong>${name}</strong> !</p>
-            <p>Nous avons reçu votre demande pour le forfait <strong>${currentPlan.speed}</strong> à <strong>${zone}</strong>.</p>
-            <div class="swal-custom-box">
-              <strong>Coordonnées GPS enregistrées :</strong><br/>
-              <code>${gpsString}</code><br/><br/>
-              Notre équipe vous contactera sous peu au <strong>${rawPhone}</strong>.
-            </div>
-          `,
-          confirmButtonText: "Parfait",
-        });
+        if (window.Swal) {
+          await Swal.fire({
+            icon: "success",
+            title: successTitle,
+            html: `
+              <p>Merci <strong>${name}</strong> !</p>
+              <p style="margin-top:0.5rem; font-size:0.9rem; color:#64748b;">
+                Nous avons reçu votre demande pour <strong>${zone}</strong> (GPS: <code>${gpsString}</code>).
+              </p>
+              <p style="margin-top:0.5rem; font-size:0.85rem; color:#94a3b8;">
+                Notre équipe vous contactera au <strong>${rawPhone}</strong>.
+              </p>
+            `,
+            confirmButtonColor: "#7c3aed",
+          });
+        }
 
         if (leadModal) leadModal.classList.remove("active");
         leadForm.reset();
@@ -956,14 +842,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (phoneInput) phoneInput.value = formatPhoneNumber("");
       } catch (err) {
         console.error("Lead Submission Error:", err);
-        showStandardAlert({
-          icon: "error",
-          title: "Échec de l'envoi",
-          text:
-            err.message ||
-            "Impossible de contacter le serveur. Réessayez plus tard.",
-          confirmButtonColor: SWAL_THEME.dangerButtonColor,
-        });
+        if (window.Swal) {
+          Swal.fire({
+            icon: "error",
+            title: "Échec de l'envoi",
+            text:
+              err.message ||
+              "Impossible de contacter le serveur. Réessayez plus tard.",
+            confirmButtonColor: "#ef4444",
+          });
+        } else {
+          alert(`Erreur d'envoi: ${err.message}`);
+        }
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
@@ -997,6 +887,9 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
+  /* ==========================================================================
+     Coverage Check Form Handler
+     ========================================================================== */
   const coverageForm = document.getElementById("coverageForm");
   if (coverageForm) {
     coverageForm.addEventListener("submit", (e) => {
