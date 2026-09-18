@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
      Mock Coverage Data & Pricing Tiers
      ========================================================================== */
 
-  const PROXY_BASE_URL = "http://127.0.0.1:3001";
+  const PROXY_BASE_URL = "https://uisp-proxy-ls6j.onrender.com";
 
   const MOCK_COVERAGE_POLYGONS = [
     {
