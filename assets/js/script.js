@@ -16,25 +16,57 @@ document.addEventListener("DOMContentLoaded", () => {
       .swal2-container {
         z-index: 99999 !important;
       }
+
+      /* Base Modal Popup Styles */
       .swal2-popup {
         font-family: inherit !important;
         border-radius: 16px !important;
         padding: 1.75rem !important;
-        background: #121026 !important; /* Matches your modal dark theme */
+        background: #121026 !important;
         color: #f8fafc !important;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
       }
       .swal2-title {
         font-size: 1.35rem !important;
         font-weight: 700 !important;
-        color: #ffffff !important; /* High contrast visible title */
+        color: #ffffff !important;
         margin-top: 0.5rem !important;
       }
       .swal2-html-container {
         font-size: 0.95rem !important;
-        color: #cbd5e1 !important; /* Muted readable text */
+        color: #cbd5e1 !important;
         margin-top: 0.75rem !important;
       }
+
+      /* ==========================================
+         TOAST OVERRIDES (Strict Selector Fix)
+         ========================================== */
+      .swal2-popup.swal2-toast {
+        padding: 0.4rem 0.75rem !important;
+        border-radius: 8px !important;
+        width: auto !important;
+        max-width: 300px !important;
+      }
+      .swal2-popup.swal2-toast .swal2-title {
+        font-size: 1rem !important; /* Forces tiny title size */
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        color: #f8fafc !important;
+      }
+      .swal2-popup.swal2-toast .swal2-html-container {
+        font-size: 0.9rem !important; /* Forces tiny body text size */
+        margin: 0.15rem 0 0 0 !important;
+        padding: 0 !important;
+        color: #cbd5e1 !important;
+      }
+      .swal2-popup.swal2-toast .swal2-icon {
+        transform: scale(0.55) !important;
+        margin: 0 0.3rem 0 0 !important;
+      }
+
+      /* Standard Buttons & Form Inputs */
       .swal2-styled.swal2-confirm {
         background-color: #7c3aed !important;
         color: #ffffff !important;
@@ -166,51 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const PROXY_BASE_URL = "http://127.0.0.1:3001";
 
-  /* const MOCK_COVERAGE_POLYGONS = [
-    {
-      name: "Delmas Coverage Zone",
-      geometry: {
-        coordinates: [
-          [
-            [-72.33, 18.54],
-            [-72.28, 18.54],
-            [-72.28, 18.58],
-            [-72.33, 18.58],
-            [-72.33, 18.54],
-          ],
-        ],
-      },
-    },
-    {
-      name: "Pétion-Ville Coverage Zone",
-      geometry: {
-        coordinates: [
-          [
-            [-72.3, 18.5],
-            [-72.26, 18.5],
-            [-72.26, 18.535],
-            [-72.3, 18.535],
-            [-72.3, 18.5],
-          ],
-        ],
-      },
-    },
-    {
-      name: "Tabarre Coverage Zone",
-      geometry: {
-        coordinates: [
-          [
-            [-72.3000, 18.5000],
-            [-72.2600, 18.5000],
-            [-72.2600, 18.5350],
-            [-72.3000, 18.5350],
-            [-72.3000, 18.5000]
-          ]
-        ]
-      }
-    }
-  ]; */
-
   const MOCK_COVERAGE_POLYGONS = [
     {
       name: "Delmas",
@@ -245,11 +232,11 @@ document.addEventListener("DOMContentLoaded", () => {
       geometry: {
         coordinates: [
           [
-            [-72.3, 18.57], 
-            [-72.25, 18.57], 
+            [-72.3, 18.57],
+            [-72.25, 18.57],
             [-72.25, 18.6],
-            [-72.3, 18.6], 
-            [-72.3, 18.57], 
+            [-72.3, 18.6],
+            [-72.3, 18.57],
           ],
         ],
       },
