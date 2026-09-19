@@ -1,0 +1,74 @@
+================================================================================
+                    FRONTEND APPLICATION DOCUMENTATION
+================================================================================
+
+1. OVERVIEW
+--------------------------------------------------------------------------------
+This frontend application is a client-facing web portal for broadband lead generation 
+and network coverage verification. It allows users to check internet service coverage 
+in real time using GPS geolocation or manual zone selection, select subscription plans, 
+and submit leads directly to the UISP CRM backend through the secure Express proxy server.
+
+
+2. FILE STRUCTURE & ARCHITECTURE
+--------------------------------------------------------------------------------
+- index.html:
+  * Structure: Contains section landing areas (Hero, Services, Coverage Check, Plans, FAQ, Contact).
+  * Lead Modal: Multi-step lead capture modal for Residential and Business inquiries.
+  * Form Elements: Collects customer contact info (name, phone, street address, zone).
+  * Dynamic Modals: Styled modal popups initialized via SweetAlert2.
+
+- script.js:
+  * Application Logic: Handles tab switching, plan selection, and UI interactions.
+  * Geolocation Engine: Implements browser `navigator.geolocation` and point-in-polygon 
+    polygon checks (`MOCK_COVERAGE_POLYGONS`) to detect user coverage zones (e.g., Tabarre).
+  * Form Handler: Sanitizes phone inputs, constructs the lead JSON payload, and posts to 
+    the backend endpoint (`/api/leads`).
+  * Unified UI Theme: Injects dark-themed CSS styling overrides for SweetAlert2 popups 
+    and toast notifications.
+
+
+3. KEY FUNCTIONALITIES
+--------------------------------------------------------------------------------
+- Real-time GPS Coverage Check:
+  * Captures browser coordinates (latitude, longitude).
+  * Matches coordinates against local boundary polygons (`checkMockCoverage`).
+  * Automatically populates and locks the `#zone` input field with the detected zone name 
+    or tags "Hors Zone (Liste Prioritaire)" if out of bounds.
+
+- Plan Selection & Tab Switching:
+  * Toggles between "Residential" and "Business" customer types.
+  * Dynamically updates plan offerings and stores active selection for lead submission.
+
+- Lead Creation Payload:
+  * Formats data according to the backend proxy structure:
+    - `isLead`: true
+    - `clientType`: 1 (Residential) or 2 (Business)
+    - `firstName` & `lastName`
+    - `contacts`: Phone number and contact flags
+    - `street1`: Formatted GPS string or address
+    - `city`: Identified coverage zone
+    - `note`: Includes selected plan, coverage status, and zone summary
+
+
+4. BACKEND INTEGRATION
+--------------------------------------------------------------------------------
+- Target Endpoint: `POST https://uisp-proxy-ls6j.onrender.com/api/leads`
+- Security Requirements: CORS configuration must permit the origin hosting `index.html` 
+  (e.g., `https://mystvictor.github.io`).
+- Optional Verification: Passes Cloudflare Turnstile token (`turnstileToken`) in the 
+  request payload if bot protection is enabled.
+
+
+5. UI & STYLING OVERRIDES (SWEETALERT2)
+--------------------------------------------------------------------------------
+- Custom Dark Theme:
+  * Dark Background: `#121026`
+  * Primary Accent: `#7c3aed` (Purple buttons)
+  * Cancel/Secondary Accent: `#475569` (Slate grey buttons)
+  * High Contrast Text: `#ffffff` titles, `#cbd5e1` body text
+- Scaled Toast Notifications:
+  * Specialized CSS overrides target `.swal2-popup.swal2-toast`.
+  * Title Font Size: `0.9rem`
+  * Body Font Size: `0.825rem`
+  * Compact Padding: `0.6rem 0.9rem` for minimal screen obstruction.
