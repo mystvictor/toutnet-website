@@ -899,7 +899,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ...(turnstileToken && { turnstileToken }),
         };
 
-        const response = await fetch(`${PROXY_BASE_URL}/api/leads`, {
+        const response = await fetch(`${PROXY_BASE_URL}/api/v1/leads`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(leadPayload),
@@ -930,7 +930,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="swal-custom-box">
               <strong>Coordonnées GPS enregistrées :</strong><br/>
               <code>${gpsString}</code><br/><br/>
-              Notre équipe vous contactera sous peu au <strong>${rawPhone}</strong>.
+              Notre équipe vous contactera sous peu au :<br/><strong>${rawPhone}</strong><br/>
             </div>
           `,
           confirmButtonText: "Parfait",
@@ -980,6 +980,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   if (btnTesterAdresseMobile) {
     btnTesterAdresseMobile.addEventListener("click", () =>
+      openOrderModalWithGPS(false, true),
+    );
+  }
+
+  // Bind "Commander Mon Accès" button
+  const btnOrderAccess = document.getElementById("btn-order-access");
+  if (btnOrderAccess) {
+    btnOrderAccess.addEventListener("click", () =>
       openOrderModalWithGPS(false, true),
     );
   }
