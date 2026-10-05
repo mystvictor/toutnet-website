@@ -38,9 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
         margin-top: 0.75rem !important;
       }
 
-      /* ==========================================
-         TOAST OVERRIDES (Strict Selector Fix)
-         ========================================== */
+      /* TOAST OVERRIDES */
       .swal2-popup.swal2-toast {
         padding: 0.4rem 0.75rem !important;
         border-radius: 8px !important;
@@ -48,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
         max-width: 300px !important;
       }
       .swal2-popup.swal2-toast .swal2-title {
-        font-size: 1rem !important; /* Forces tiny title size */
+        font-size: 1rem !important;
         font-weight: 600 !important;
         line-height: 1.2 !important;
         margin: 0 !important;
@@ -56,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
         color: #f8fafc !important;
       }
       .swal2-popup.swal2-toast .swal2-html-container {
-        font-size: 0.9rem !important; /* Forces tiny body text size */
+        font-size: 0.9rem !important;
         margin: 0.15rem 0 0 0 !important;
         padding: 0 !important;
         color: #cbd5e1 !important;
@@ -320,9 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const mobileMenu = document.getElementById("mobileMenu");
   const mobileOverlay = document.getElementById("mobileOverlay");
   const mobileLinks = document.querySelectorAll(".mobile-link");
-  const btnTesterAdresseMobile = document.getElementById(
-    "btnTesterAdresseMobile",
-  );
+  const btnTesterAdresseMobile = document.getElementById("btnTesterAdresseMobile");
 
   function toggleMobileMenu() {
     if (mobileMenu) mobileMenu.classList.toggle("active");
@@ -521,7 +517,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 areaInput.readOnly = true;
               }
 
-              Swal.close();
+              if (window.Swal) Swal.close();
               showToast("success", "Position GPS acquise avec succès.");
               resolve(userCoordinates);
             },
@@ -566,7 +562,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // Ray-casting algorithm (Expects point as [lng, lat] and polygon as [[lng, lat], ...])
   const isPointInPolygon = (point, vs) => {
     const x = point[0],
       y = point[1];
@@ -586,9 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return inside;
   };
 
-  // Checks coverage and returns details if inside a zone
   const checkMockCoverage = (latitude, longitude) => {
-    // GeoJSON standard uses [longitude, latitude]
     const userPoint = [longitude, latitude];
 
     for (const area of MOCK_COVERAGE_POLYGONS) {
@@ -652,15 +645,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return false;
   };
 
-  const syncZoneToModal = () => {
-    const addressInput = document.getElementById("addressInput");
-    const modalZoneInput = document.getElementById("zone");
-
-    if (addressInput && modalZoneInput && addressInput.value.trim() !== "") {
-      modalZoneInput.value = addressInput.value.trim();
-    }
-  };
-
   const openOrderModalWithGPS = async (
     priorityFlag = false,
     promptPlanSelect = false,
@@ -682,7 +666,7 @@ document.addEventListener("DOMContentLoaded", () => {
         userCoordinates.longitude,
       );
 
-      if (isCovered) {
+      if (isCovered.isCovered) {
         showToast("success", "Votre position GPS est dans une zone couverte !");
       } else {
         isPriorityListRequest = true;
@@ -705,7 +689,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!planPicked) return;
     }
 
-    syncZoneToModal();
     updateModalSubtitle();
     if (leadModal) leadModal.classList.add("active");
   };
@@ -736,6 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const phoneInput = document.getElementById("phone");
 
   function formatPhoneNumber(val) {
+    if (!val) return "+509 ";
     let digits = val.replace(/\D/g, "");
     if (digits.startsWith("509")) {
       digits = digits.slice(3);
@@ -763,6 +747,7 @@ document.addEventListener("DOMContentLoaded", () => {
     phoneInput.addEventListener("keydown", (e) => {
       if (
         (e.key === "Backspace" || e.key === "Delete") &&
+        phoneInput.selectionStart !== null &&
         phoneInput.selectionStart <= 5
       ) {
         e.preventDefault();
@@ -770,7 +755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     phoneInput.addEventListener("focus", () => {
-      if (phoneInput.selectionStart < 5) {
+      if (phoneInput.selectionStart !== null && phoneInput.selectionStart < 5) {
         phoneInput.setSelectionRange(
           phoneInput.value.length,
           phoneInput.value.length,
@@ -812,6 +797,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("success", "Demande envoyée !");
         if (leadModal) leadModal.classList.remove("active");
         leadForm.reset();
+        if (phoneInput) phoneInput.value = formatPhoneNumber("");
         return;
       }
 
