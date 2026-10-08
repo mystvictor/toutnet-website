@@ -875,12 +875,14 @@ document.addEventListener("DOMContentLoaded", () => {
             {
               name: name.trim(),
               phone: cleanedPhone,
-              isBilling: true,
-              isContact: true,
+              isBilling: false,
+              isContact: false,
             },
           ],
-          street1: gpsString,
+          street: gpsString,
           city: zone,
+          latitude: userCoordinates.latitude,
+          longitude: userCoordinates.longitude,
           note: `Lead Web Site - Zone : ${zone} | Plan : ${formattedPlanName} | Zone Couverte : ${isPriorityListRequest ? "NON" : "OUI"}`,
           ...(turnstileToken && { turnstileToken }),
         };
