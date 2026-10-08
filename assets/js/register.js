@@ -402,7 +402,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const result = await response.json();
-
       console.log("Customer registered:", result);
       alert("Votre demande d'inscription a été enregistrée.");
 
